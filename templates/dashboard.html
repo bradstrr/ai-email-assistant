@@ -1,0 +1,28 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Email Assistant</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 2rem; }
+        .email-card {
+            border: 1px solid #ddd;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+        .subject { font-weight: bold; }
+        .snippet { margin-top: 0.5rem; color: #555; }
+    </style>
+</head>
+<body>
+    <h1>Unread Emails ({{ messages|length }})</h1>
+    {% for msg in messages %}
+        <div class="email-card">
+            <div class="subject">{{ msg.subject }}</div>
+            <div class="snippet">{{ msg.snippet }}</div>
+        </div>
+    {% endfor %}
+</body>
+</html>
+
