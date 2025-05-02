@@ -4,15 +4,17 @@ from googleapiclient.discovery import build
 import os
 import pickle
 import openai
+from dotenv import load_dotenv
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import base64
 
+load_dotenv()
+openai.api_key = os.getenv('OPENAI_API_KEY')
+
+
 app = Flask(__name__)
 SCOPES = ['https://www.googleapis.com/auth/gmail.modify']
-
-# Your OpenAI API key (replace with your actual key)
-openai.api_key = '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'
 
 
 def gmail_authenticate():
