@@ -16,6 +16,13 @@ openai.api_key = os.getenv('OPENAI_API_KEY')
 app = Flask(__name__)
 SCOPES = ['https://www.googleapis.com/auth/gmail.modify']
 
+def save_credentials_from_env():
+    credentials_json = os.getenv('CREDENTIALS_JSON')  # Ensure you add the base64 encoded content as an env variable
+    if credentials_json:
+        with open('credentials.json', 'wb') as f:
+            f.write(base64.b64decode(credentials_json))
+
+save_credentials_from_env()
 
 def gmail_authenticate():
     creds = None
