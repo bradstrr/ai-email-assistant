@@ -30,6 +30,7 @@ def gmail_authenticate():
         with open('token.pkl', 'rb') as token:
             creds = pickle.load(token)
     if not creds or not creds.valid:
+        print("Using google-auth-oauthlib version:", google_auth_oauthlib.__version__)
         flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
         creds = flow.run_console()
         with open('token.pkl', 'wb') as token:
