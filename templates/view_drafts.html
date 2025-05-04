@@ -114,9 +114,13 @@
                 <div class="email-card">
                     <div class="subject">{{ draft.subject }}</div>
                     <div class="snippet">{{ draft.body }}</div>
+
+                    {# Uncomment this when 'date' is added to draft object in backend #}
+                    {#
                     <div class="card-footer">
                         <small>Drafted: {{ draft.date }}</small>
                     </div>
+                    #}
 
                     <!-- Send Button -->
                     <form action="{{ url_for('send_draft', draft_id=draft.id) }}" method="POST">
@@ -130,4 +134,5 @@
     </div>
 </body>
 </html>
+
 

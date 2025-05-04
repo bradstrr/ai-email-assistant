@@ -156,18 +156,26 @@ def view_drafts():
     if not service:
         return redirect('/authorize')
 
-    results = service.users().messages().list(userId='me', labelIds=['DRAFT']).execute()
-    drafts = results.get('messages', [])
+    results = service.users().drafts().list(userId='me').execute()
+    drafts = results.get('drafts', [])
 
     draft_details = []
     for draft in drafts:
-        draft_message = service.users().messages().get(userId='me', id=draft['id']).execute()
-        subject = next((h['value'] for h in draft_message['payload']['headers'] if h['name'] == 'Subject'),
-                       'No Subject')
-        body = draft_message['snippet']
-        draft_details.append({'id': draft['id'], 'subject': subject, 'body': body})
+        draft_id = draft['id']
+        draft_detail = service.users().drafts().get(userId='me', id=draft_id).execute()
+        message = draft_detail.get('message', {})
+        headers = message.get('payload', {}).get('headers', [])
+        subject = next((h['value'] for h in headers if h['name'] == 'Subject'), 'No Subject')
+        snippet = message.get('snippet', '')
+
+        draft_details.append({
+            'id': draft_id,  # Use actual draft ID
+            'subject': subject,
+            'body': snippet
+        })
 
     return render_template('view_drafts.html', drafts=draft_details)
+
 
 @app.route('/send_draft/<draft_id>', methods=['POST'])
 def send_draft(draft_id):
