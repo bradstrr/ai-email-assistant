@@ -1,4 +1,4 @@
-﻿from flask import Flask, render_template, redirect, request, session, url_for
+from flask import Flask, render_template, redirect, request, session, url_for
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 import os
@@ -188,8 +188,8 @@ def send_draft(draft_id):
         draft = service.users().drafts().get(userId='me', id=draft_id).execute()
         message = draft['message']
 
-        # Send the message
-        service.users().messages().send(userId='me', body={'raw': message['raw']}).execute()
+        # Send the existing draft properly
+        service.users().drafts().send(userId='me', body={'id': draft_id}).execute()
 
         # Optionally delete the draft now that it's sent
         service.users().drafts().delete(userId='me', id=draft_id).execute()
