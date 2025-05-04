@@ -16,16 +16,14 @@ app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'supersecretkey')  # Needed for session management
 SCOPES = ['https://www.googleapis.com/auth/gmail.modify']
 
-
+# Function to save the credentials from base64 string stored in environment variable
 def save_credentials_from_env():
-    credentials_json = os.getenv('CREDENTIALS_JSON')  # Base64-encoded creds
+    credentials_json = os.getenv('GOOGLE_CREDENTIALS_JSON')  # Base64-encoded creds
     if credentials_json:
         with open('credentials.json', 'wb') as f:
             f.write(base64.b64decode(credentials_json))
 
-
-save_credentials_from_env()
-
+save_credentials_from_env()  # Save credentials on app start
 
 def gmail_authenticate():
     creds = None
@@ -94,10 +92,8 @@ def get_email_content(service, message_id):
 def generate_email_response(email_body):
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": f"Respond to the following email:\n\n{email_body}"}
-        ]
+        messages=[{"role": "system", "content": "You are a helpful assistant."},
+                  {"role": "user", "content": f"Respond to the following email:\n\n{email_body}"}]
     )
     return response.choices[0].message.content
 
@@ -176,5 +172,6 @@ def view_drafts():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
 
 
