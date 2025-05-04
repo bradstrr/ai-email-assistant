@@ -169,6 +169,28 @@ def view_drafts():
 
     return render_template('view_drafts.html', drafts=draft_details)
 
+@app.route('/send_draft/<draft_id>', methods=['POST'])
+def send_draft(draft_id):
+    service = gmail_authenticate()
+    if not service:
+        return redirect('/authorize')
+
+    try:
+        # Get the draft content
+        draft = service.users().drafts().get(userId='me', id=draft_id).execute()
+        message = draft['message']
+
+        # Send the message
+        service.users().messages().send(userId='me', body={'raw': message['raw']}).execute()
+
+        # Optionally delete the draft now that it's sent
+        service.users().drafts().delete(userId='me', id=draft_id).execute()
+
+    except Exception as e:
+        print(f"Error sending draft: {e}")
+
+    return redirect(url_for('view_drafts'))
+
 
 if __name__ == '__main__':
     app.run(debug=True)
