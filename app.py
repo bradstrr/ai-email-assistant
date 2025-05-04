@@ -1,5 +1,5 @@
-﻿from flask import Flask, render_template, redirect, request
-from google_auth_oauthlib.flow import InstalledAppFlow
+﻿from flask import Flask, render_template, redirect, request, session, url_for
+from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 import os
 import pickle
@@ -13,39 +13,61 @@ load_dotenv()
 openai.api_key = os.getenv('OPENAI_API_KEY')
 
 app = Flask(__name__)
+app.secret_key = os.getenv('FLASK_SECRET_KEY', 'supersecretkey')  # Needed for session management
 SCOPES = ['https://www.googleapis.com/auth/gmail.modify']
 
+
 def save_credentials_from_env():
-    credentials_json = os.getenv('CREDENTIALS_JSON')  # Ensure you add the base64 encoded content as an env variable
+    credentials_json = os.getenv('CREDENTIALS_JSON')  # Base64-encoded creds
     if credentials_json:
         with open('credentials.json', 'wb') as f:
             f.write(base64.b64decode(credentials_json))
 
+
 save_credentials_from_env()
+
 
 def gmail_authenticate():
     creds = None
     if os.path.exists('token.pkl'):
         with open('token.pkl', 'rb') as token:
             creds = pickle.load(token)
-    if not creds or not creds.valid:
-        flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
-
-        # If running on Render (no browser), show the URL and wait for manual input
-        if os.getenv('RENDER'):
-            auth_url, _ = flow.authorization_url(prompt='consent')
-            print("Go to the following URL and authorize the app:\n", auth_url)
-            code = input("Enter the authorization code: ")
-            flow.fetch_token(code=code)
-            creds = flow.credentials
-        else:
-            # Locally, use the browser-based flow
-            creds = flow.run_local_server(port=0)
-
-        with open('token.pkl', 'wb') as token:
-            pickle.dump(creds, token)
-
+    if not creds:
+        return None
     return build('gmail', 'v1', credentials=creds)
+
+
+@app.route('/authorize')
+def authorize():
+    flow = Flow.from_client_secrets_file(
+        'credentials.json',
+        scopes=SCOPES,
+        redirect_uri=url_for('oauth2callback', _external=True)
+    )
+    authorization_url, state = flow.authorization_url(
+        access_type='offline',
+        prompt='consent'
+    )
+    session['state'] = state
+    return redirect(authorization_url)
+
+
+@app.route('/oauth2callback')
+def oauth2callback():
+    state = session['state']
+    flow = Flow.from_client_secrets_file(
+        'credentials.json',
+        scopes=SCOPES,
+        state=state,
+        redirect_uri=url_for('oauth2callback', _external=True)
+    )
+    flow.fetch_token(authorization_response=request.url)
+
+    creds = flow.credentials
+    with open('token.pkl', 'wb') as token:
+        pickle.dump(creds, token)
+
+    return redirect('/dashboard')
 
 
 def get_email_content(service, message_id):
@@ -93,14 +115,20 @@ def create_draft(service, sender, subject, recipient, body):
         userId="me", body={'message': {'raw': raw_message}}).execute()
     return draft
 
+
 @app.route('/')
 def index():
+    if not os.path.exists('token.pkl'):
+        return redirect('/authorize')
     return redirect('/dashboard')
 
 
 @app.route('/dashboard')
 def dashboard():
     service = gmail_authenticate()
+    if not service:
+        return redirect('/authorize')
+
     results = service.users().messages().list(userId='me', labelIds=['INBOX'], q='is:unread', maxResults=10).execute()
     messages = results.get('messages', [])
 
@@ -129,6 +157,9 @@ def dashboard():
 @app.route('/view_drafts')
 def view_drafts():
     service = gmail_authenticate()
+    if not service:
+        return redirect('/authorize')
+
     results = service.users().messages().list(userId='me', labelIds=['DRAFT']).execute()
     drafts = results.get('messages', [])
 
@@ -145,4 +176,5 @@ def view_drafts():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
 
