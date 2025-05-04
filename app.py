@@ -30,9 +30,21 @@ def gmail_authenticate():
             creds = pickle.load(token)
     if not creds or not creds.valid:
         flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
-        creds = flow.run_console()
+
+        # If running on Render (no browser), show the URL and wait for manual input
+        if os.getenv('RENDER'):
+            auth_url, _ = flow.authorization_url(prompt='consent')
+            print("Go to the following URL and authorize the app:\n", auth_url)
+            code = input("Enter the authorization code: ")
+            flow.fetch_token(code=code)
+            creds = flow.credentials
+        else:
+            # Locally, use the browser-based flow
+            creds = flow.run_local_server(port=0)
+
         with open('token.pkl', 'wb') as token:
             pickle.dump(creds, token)
+
     return build('gmail', 'v1', credentials=creds)
 
 
