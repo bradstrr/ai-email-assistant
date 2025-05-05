@@ -1,4 +1,4 @@
-﻿from flask import Flask, render_template, redirect, request, session, url_for
+from flask import Flask, render_template, redirect, request, session, url_for
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 import os
