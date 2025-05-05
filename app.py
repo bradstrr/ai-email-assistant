@@ -91,7 +91,7 @@ def get_email_content(service, message_id):
 
 def generate_email_response(email_body):
     response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4-turbo",  # Using GPT-4-turbo for the AI respons
         messages=[{"role": "system", "content": "You are a helpful assistant."},
                   {"role": "user", "content": f"Respond to the following email:\n\n{email_body}"}]
     )
@@ -252,6 +252,3 @@ def send_draft(draft_id):
 
 if __name__ == '__main__':
     app.run(debug=True)
-
-
-
