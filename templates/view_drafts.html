@@ -5,16 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>View Drafts - AI Email Assistant</title>
     <style>
-        body {
+       body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #121212; /* Dark background */
-            color: #e0e0e0; /* Light text */
+            background-color: #121212;
+            color: #e0e0e0;
             margin: 0;
             padding: 0;
         }
 
         header {
-            background-color: #1e1e1e; /* Dark header */
+            background-color: #1e1e1e;
             padding: 20px;
             text-align: center;
             color: #ffffff;
@@ -34,7 +34,7 @@
         }
 
         .email-card {
-            background-color: #2c2c2c; /* Darker card background */
+            background-color: #2c2c2c;
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
             margin-bottom: 1.5rem;
@@ -42,40 +42,68 @@
             display: flex;
             flex-direction: column;
             transition: transform 0.2s ease;
+            position: relative;
+            z-index: 1;
         }
 
         .email-card:hover {
             transform: translateY(-5px);
-            background-color: #333333; /* Hover effect for cards */
+            background-color: #333333;
         }
 
         .email-card .subject {
             font-size: 1.3rem;
             font-weight: bold;
-            color: #f0f0f0; /* Light subject text */
+            color: #f0f0f0;
         }
 
-        .email-card .snippet {
+        .body-content {
             margin-top: 0.5rem;
-            color: #bbb; /* Lighter text for snippets */
+            color: #bbb;
             font-size: 0.95rem;
             line-height: 1.5;
+            max-height: 150px;
+            overflow: hidden;
+            white-space: pre-line;
+            word-wrap: break-word;
+        }
+
+        .email-card.expanded .body-content {
+            max-height: none;
+            overflow: visible;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            word-break: break-word;  /* Forcing long words to break */
+        }
+
+        .email-card.expanded {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 95vw;
+            height: 85vh;
+            background-color: #1e1e1e;
+            z-index: 999;
+            overflow-y: auto;
+            padding: 3rem;
+            max-width: 100%;  /* Ensure the card doesn't overflow */
+            overflow-x: hidden;  /* Prevent horizontal overflow */
         }
 
         .card-footer {
             margin-top: 1rem;
             font-size: 0.85rem;
-            color: #888; /* Footer text color */
+            color: #888;
         }
 
         .empty-state {
             text-align: center;
             font-size: 1.2rem;
-            color: #555; /* Empty state text */
+            color: #555;
         }
 
-        .action-btn, .send-btn {
-           background-color: #6200ea; /* Vibrant accent color */
+        .action-btn, .send-btn, .view-btn, .close-btn {
+            background-color: #6200ea;
             color: white;
             border: none;
             padding: 0.8rem 1.5rem;
@@ -83,15 +111,21 @@
             border-radius: 25px;
             cursor: pointer;
             transition: background-color 0.3s;
+            margin-top: 1rem;
+            margin-right: 0.5rem;
         }
 
-        .action-btn:hover, .send-btn:hover {
-            background-color: #3700b3; /* Darker shade on hover */
+        .action-btn:hover, .send-btn:hover, .view-btn:hover, .close-btn:hover {
+            background-color: #3700b3;
         }
 
         .header-action {
-            margin-bottom: 2rem; /* Space above the button */
+            margin-bottom: 2rem;
             text-align: left;
+        }
+
+        .btn-group {
+            margin-top: 1rem;
         }
     </style>
 </head>
@@ -111,27 +145,41 @@
             <div class="empty-state">You have no drafts at the moment.</div>
         {% else %}
             {% for draft in drafts %}
-                <div class="email-card">
+                <div class="email-card" id="card-{{ draft.id }}">
+                    <p style="margin-bottom: 10px; font-size: 0.9rem; color: #aaa;"><p><strong>From:</strong> {{ draft.from }}</p>
                     <div class="subject">{{ draft.subject }}</div>
-                    <div class="snippet">{{ draft.body }}</div>
+                    <div class="body-content">{{ draft.body }}</div>
 
-                    <!-- Uncomment this when 'date' is added to draft object in backend -->
-                    {#
-                    <div class="card-footer">
-                        <small>Drafted: {{ draft.date }}</small>
+                    <div class="btn-group">
+                        <button class="view-btn" onclick="expandCard('{{ draft.id }}')">View</button>
+                        <form action="{{ url_for('send_draft', draft_id=draft.id) }}" method="POST" style="display:inline;">
+                            <button type="submit" class="send-btn">Send Email</button>
+                        </form>
+                        <button class="close-btn" onclick="collapseCard('{{ draft.id }}')" style="display: none;">Close</button>
                     </div>
-                    #}
-
-                    <!-- Send Button -->
-                    <form action="{{ url_for('send_draft', draft_id=draft.id) }}" method="POST">
-                        <button type="submit" class="send-btn">Send Email</button>
-                    </form>
                 </div>
             {% endfor %}
         {% endif %}
     </div>
+
+    <script>
+        function expandCard(id) {
+            const card = document.getElementById('card-' + id);
+            card.classList.add('expanded');
+            card.querySelector('.close-btn').style.display = 'inline-block';
+            card.querySelector('.view-btn').style.display = 'none';
+        }
+
+        function collapseCard(id) {
+            const card = document.getElementById('card-' + id);
+            card.classList.remove('expanded');
+            card.querySelector('.close-btn').style.display = 'none';
+            card.querySelector('.view-btn').style.display = 'inline-block';
+        }
+    </script>
 </body>
 </html>
+
 
 
 

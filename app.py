@@ -102,7 +102,10 @@ def create_draft(service, sender, subject, recipient, body):
     message = MIMEMultipart()
     message['to'] = recipient
     message['subject'] = "Re: " + subject
-    msg = MIMEText(body)
+
+    visual_body = f"To: {recipient}\n\n" + body
+
+    msg = MIMEText(visual_body)
     message.attach(msg)
 
     raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode('utf-8')
@@ -156,25 +159,50 @@ def view_drafts():
     if not service:
         return redirect('/authorize')
 
-    results = service.users().drafts().list(userId='me').execute()
-    drafts = results.get('drafts', [])
+    try:
+        results = service.users().drafts().list(userId='me').execute()
+        drafts = results.get('drafts', [])
 
-    draft_details = []
-    for draft in drafts:
-        draft_id = draft['id']
-        draft_detail = service.users().drafts().get(userId='me', id=draft_id).execute()
-        message = draft_detail.get('message', {})
-        headers = message.get('payload', {}).get('headers', [])
-        subject = next((h['value'] for h in headers if h['name'] == 'Subject'), 'No Subject')
-        snippet = message.get('snippet', '')
+        draft_details = []
+        for draft in drafts:
+            draft_id = draft['id']
+            draft_detail = service.users().drafts().get(userId='me', id=draft_id).execute()
+            message = draft_detail.get('message', {})
+            headers = message.get('payload', {}).get('headers', [])
+            subject = next((h['value'] for h in headers if h['name'] == 'Subject'), 'No Subject')
+            sender = next((h['value'] for h in headers if h['name'] == 'From'), 'Unknown Sender')
 
-        draft_details.append({
-            'id': draft_id,  # Use actual draft ID
-            'subject': subject,
-            'body': snippet
-        })
+            # Attempt to retrieve the body from parts (handling plain-text and HTML)
+            body = 'No body content found.'
+            parts = message.get('payload', {}).get('parts', [])
 
-    return render_template('view_drafts.html', drafts=draft_details)
+            if parts:
+                for part in parts:
+                    # Check if part is text/plain or text/html
+                    if part.get('mimeType') == 'text/plain' or part.get('mimeType') == 'text/html':
+                        data = part.get('body', {}).get('data', '')
+                        if data:
+                            body = base64.urlsafe_b64decode(data).decode('utf-8')
+                            break  # We found a part, no need to continue
+
+            # If no parts found, check for body directly (for single part emails)
+            if not body and 'body' in message.get('payload', {}):
+                body_data = message.get('payload', {}).get('body', {}).get('data', '')
+                if body_data:
+                    body = base64.urlsafe_b64decode(body_data).decode('utf-8')
+
+            draft_details.append({
+                'id': draft_id,
+                'subject': subject,
+                'body': body,
+                'from': sender
+            })
+
+        return render_template('view_drafts.html', drafts=draft_details)
+
+    except HttpError as error:
+        print(f'An error occurred: {error}')
+        return redirect('/error')  # You can define an error page here
 
 
 @app.route('/send_draft/<draft_id>', methods=['POST'])
