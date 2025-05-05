@@ -146,7 +146,6 @@
         {% else %}
             {% for draft in drafts %}
                 <div class="email-card" id="card-{{ draft.id }}">
-                    <p style="margin-bottom: 10px; font-size: 0.9rem; color: #aaa;"><p><strong>From:</strong> {{ draft.from }}</p>
                     <div class="subject">{{ draft.subject }}</div>
                     <div class="body-content">{{ draft.body }}</div>
 

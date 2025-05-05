@@ -98,18 +98,45 @@ def generate_email_response(email_body):
     return response.choices[0].message.content
 
 
+def summarize_email(email_body):
+    # Request a summary from OpenAI (You can adjust the prompt to be more specific)
+    summary = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "system", "content": "You are a helpful assistant."},
+                  {"role": "user", "content": f"Summarize the following email:\n\n{email_body}"}]
+    )
+    return summary.choices[0].message.content.strip()
+
+
 def create_draft(service, sender, subject, recipient, body):
+    # Summarize the user's email content
+    email_summary = summarize_email(body)
+
+    # Prepare the draft body with summarized content and AI response
+    visual_body = f"""
+    ----- Original Message -----
+    To: {recipient}
+    Subject: {subject}
+
+    Summary: {email_summary}
+
+    ---
+
+    {generate_email_response(body)}
+    """
+
+    # Create the message
     message = MIMEMultipart()
     message['to'] = recipient
     message['subject'] = "Re: " + subject
 
-    visual_body = f"To: {recipient}\n\n" + body
-
     msg = MIMEText(visual_body)
     message.attach(msg)
 
+    # Encode the message to raw format
     raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode('utf-8')
 
+    # Create the draft
     draft = service.users().drafts().create(
         userId="me", body={'message': {'raw': raw_message}}).execute()
     return draft
@@ -133,22 +160,17 @@ def dashboard():
 
     email_data = []
     for msg in messages:
-        msg_detail = service.users().messages().get(userId='me', id=msg['id'], format='metadata',
-                                                    metadataHeaders=['Subject']).execute()
-        headers = msg_detail['payload']['headers']
-        subject = next((h['value'] for h in headers if h['name'] == 'Subject'), '(No Subject)')
-        snippet = msg_detail.get('snippet', '')
+        subject, sender, body, _ = get_email_content(service, msg['id'])
+        # Create draft including summary + AI response
+        draft = create_draft(service, 'me', subject, sender, body)
+
+        print(f"Draft created with ID: {draft['id']}")  # For debugging
+
         email_data.append({
             'id': msg['id'],
             'subject': subject,
-            'snippet': snippet
+            'snippet': body[:150]
         })
-
-        # Generate AI draft response for the email
-        subject, sender, body, _ = get_email_content(service, msg['id'])
-        ai_response = generate_email_response(body)
-        draft = create_draft(service, 'me', subject, sender, ai_response)
-        print(f"Draft created with ID: {draft['id']}")  # For debugging
 
     return render_template('dashboard.html', messages=email_data)
 
@@ -195,7 +217,7 @@ def view_drafts():
                 'id': draft_id,
                 'subject': subject,
                 'body': body,
-                'from': sender
+
             })
 
         return render_template('view_drafts.html', drafts=draft_details)
