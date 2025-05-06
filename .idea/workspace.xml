@@ -4,7 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0c04d220-28d5-4382-b89d-6959c8d19f7e" name="Changes" comment="updated styles and working interface for the emails." />
+    <list default="true" id="0c04d220-28d5-4382-b89d-6959c8d19f7e" name="Changes" comment="added new apis to provide better responses for emails">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/dashboard.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/dashboard.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/view_drafts.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/view_drafts.html" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -27,12 +32,12 @@
     &quot;assignee&quot;: &quot;bradstrr&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/bradstrr/ai-email-assistant",
-    "accountId": "ba6be807-099f-4960-84ad-b7fc38971c2d"
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/bradstrr/ai-email-assistant&quot;,
+    &quot;accountId&quot;: &quot;ba6be807-099f-4960-84ad-b7fc38971c2d&quot;
   }
-}]]></component>
+}</component>
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$PROJECT_DIR$/.venv/Lib/site-packages/google_auth_oauthlib/flow.py" root0="FORCE_HIGHLIGHTING" />
   </component>
@@ -44,16 +49,16 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ASKED_MARK_IGNORED_FILES_AS_EXCLUDED": "true",
-    "DefaultHtmlFileTemplate": "HTML File",
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "master"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ASKED_MARK_IGNORED_FILES_AS_EXCLUDED&quot;: &quot;true&quot;,
+    &quot;DefaultHtmlFileTemplate&quot;: &quot;HTML File&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\bradl\PycharmProjects\PythonProject\ai-email-assistant\templates" />
@@ -146,7 +151,31 @@
       <option name="project" value="LOCAL" />
       <updated>1746447368009</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="updated app.py and draft html">
+      <option name="closed" value="true" />
+      <created>1746456538830</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1746456538830</updated>
+    </task>
+    <task id="LOCAL-00011" summary="updated app.py and draft html">
+      <option name="closed" value="true" />
+      <created>1746460845934</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1746460845934</updated>
+    </task>
+    <task id="LOCAL-00012" summary="added new apis to provide better responses for emails">
+      <option name="closed" value="true" />
+      <created>1746462818583</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1746462818583</updated>
+    </task>
+    <option name="localTasksCounter" value="13" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -167,6 +196,8 @@
     <MESSAGE value="yaml file added" />
     <MESSAGE value="updated app.py" />
     <MESSAGE value="updated styles and working interface for the emails." />
-    <option name="LAST_COMMIT_MESSAGE" value="updated styles and working interface for the emails." />
+    <MESSAGE value="updated app.py and draft html" />
+    <MESSAGE value="added new apis to provide better responses for emails" />
+    <option name="LAST_COMMIT_MESSAGE" value="added new apis to provide better responses for emails" />
   </component>
 </project>

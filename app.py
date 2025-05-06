@@ -8,6 +8,8 @@ from dotenv import load_dotenv
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import base64
+from datetime import datetime, timedelta
+import json
 
 load_dotenv()
 openai.api_key = os.getenv('OPENAI_API_KEY')
@@ -33,6 +35,21 @@ def gmail_authenticate():
     if not creds:
         return None
     return build('gmail', 'v1', credentials=creds)
+
+def read_response_count():
+    try:
+        with open('data/responses_count.json', 'r') as f:
+            data = json.load(f)
+            return data.get("response_count", 0)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return 0
+
+# Function to increment the response count
+def increment_response_count():
+    count = read_response_count() + 1
+    with open('data/responses_count.json', 'w') as f:
+        json.dump({"response_count": count}, f)
+
 
 
 @app.route('/authorize')
@@ -139,6 +156,10 @@ def create_draft(service, sender, subject, recipient, body):
     # Create the draft
     draft = service.users().drafts().create(
         userId="me", body={'message': {'raw': raw_message}}).execute()
+
+    # Increment the response count every time an AI response is created
+    increment_response_count()
+
     return draft
 
 
@@ -146,7 +167,7 @@ def create_draft(service, sender, subject, recipient, body):
 def index():
     if not os.path.exists('token.pkl'):
         return redirect('/authorize')
-    return redirect('/dashboard')
+    return redirect('/home')
 
 
 @app.route('/dashboard')
@@ -249,6 +270,19 @@ def send_draft(draft_id):
 
     return redirect(url_for('view_drafts'))
 
+@app.route('/home')
+def home():
+    service = gmail_authenticate()
+    if not service:
+        return redirect('/authorize')
+
+    user_info = service.users().getProfile(userId='me').execute()
+    user_name = user_info.get('emailAddress', 'User')
+
+    # Get total responses generated from the responses_count.json file
+    total_responses = read_response_count()
+
+    return render_template('home.html', user_name=user_name, total_responses=total_responses)
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -31,6 +31,7 @@
             max-width: 1200px;
             margin: 2rem auto;
             padding: 0 2rem;
+            text-align: center;
         }
 
         .email-card {
@@ -121,12 +122,32 @@
 
         .header-action {
             margin-bottom: 2rem;
-            text-align: left;
+            text-align: center;
         }
 
         .btn-group {
             margin-top: 1rem;
+            display: flex;
+            justify-content: left;  /* Centers the buttons horizontally */
+            gap: 0.4rem;  /* Adds spacing between the buttons */
+            text-align: left;  /* Ensure the buttons align inside the flex container */
         }
+
+        footer {
+    background-color: #1e1e1e; /* Dark background for the footer */
+    color: #bbb; /* Light text color */
+    text-align: center;
+    padding: 1rem;
+    position: fixed;
+    width: 100%;
+    bottom: 0;
+    font-size: 0.85rem;
+}
+
+footer p {
+    margin: 0;
+}
+
     </style>
 </head>
 <body>
@@ -136,7 +157,8 @@
 
     <div class="container">
         <div class="header-action">
-            <button class="action-btn" onclick="location.href='/dashboard'">Back to Dashboard</button>
+            <button class="action-btn" onclick="location.href='/dashboard'">Unread Emails</button>
+            <button class="action-btn" onclick="location.href='/home'">Home</button>
         </div>
 
         <h2>Draft Emails</h2>
@@ -176,6 +198,13 @@
             card.querySelector('.view-btn').style.display = 'inline-block';
         }
     </script>
+    <footer>
+    <p>&copy; {{ current_year }} ICode. All rights reserved.</p>
+</footer>
+<script>
+    const currentYear = new Date().getFullYear();
+    document.querySelector("footer p").innerHTML = `&copy; ${currentYear} ICode. All rights reserved.`;
+</script>
 </body>
 </html>
 

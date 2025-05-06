@@ -1,14 +1,14 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Emails</title>
+    <title>AI Email Assistant - Home</title>
     <style>
        body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #121212; /* Dark background */
-             background-image: radial-gradient(circle at top left, rgba(255, 255, 255, 0.05), transparent),
+            background-image: radial-gradient(circle at top left, rgba(255, 255, 255, 0.05), transparent),
                       radial-gradient(circle at bottom right, rgba(255, 255, 255, 0.05), transparent);
             background-blend-mode: overlay;
             color: #e0e0e0; /* Light text */
@@ -34,43 +34,31 @@
             max-width: 1200px;
             margin: 2rem auto;
             padding: 0 2rem;
-            text-align: center;
         }
 
-        .email-card {
-            background-color: #1e1e1e;
-            border: 1px solid rgba(255, 255, 255, 0.05); /* subtle inner border */
-            border-radius: 8px;
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        .quick-links {
+            margin-bottom: 2rem;
+            text-align: center; /* Centered action buttons */
+        }
+
+        .quick-links .action-btn {
+            margin-right: 1rem;
+        }
+
+        .welcome-message {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #f0f0f0;
+            margin-bottom: 2rem;
+            text-align: center; /* Centered welcome message */
+        }
+
+        .total-emails {
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: #e0e0e0;
             margin-bottom: 1.5rem;
-            padding: 1.5rem;
-            display: flex;
-            flex-direction: column;
-            transition: transform 0.2s ease, background-color 0.3s ease;
-        }
-
-        .email-card:hover {
-            transform: translateY(-5px);
-            background-color: #333333; /* Hover effect for cards */
-        }
-
-        .email-card .subject {
-            font-size: 1.3rem;
-            font-weight: bold;
-            color: #f0f0f0; /* Light subject text */
-        }
-
-        .email-card .snippet {
-            margin-top: 0.5rem;
-            color: #bbb; /* Lighter text for snippets */
-            font-size: 0.95rem;
-            line-height: 1.5;
-        }
-
-        .card-footer {
-            margin-top: 1rem;
-            font-size: 0.85rem;
-            color: #888; /* Footer text color */
+            text-align: center; /* Centered total emails message */
         }
 
         .empty-state {
@@ -112,29 +100,22 @@ footer p {
 </head>
 <body>
     <header>
-        <h1>Emails</h1>
+        <h1>Home</h1>
     </header>
 
     <div class="container">
-        <div class="header-action">
+        <div class="quick-links">
+            <button class="action-btn" onclick="location.href='/dashboard'">Unread Emails</button>
             <button class="action-btn" onclick="location.href='/view_drafts'">View Drafts</button>
-            <button class="action-btn" onclick="location.href='/home'">Home</button>
         </div>
 
-        <h2>Unread Emails ({{ messages|length }})</h2>
-        {% if messages|length == 0 %}
-            <div class="empty-state">You have no unread emails at the moment.</div>
-        {% else %}
-            {% for msg in messages %}
-                <div class="email-card">
-                    <div class="subject">{{ msg.subject }}</div>
-                    <div class="snippet">{{ msg.snippet }}</div>
-                    <div class="card-footer">
-                        <small>Received: {{ msg.date }}</small>
-                    </div>
-                </div>
-            {% endfor %}
-        {% endif %}
+        <div class="welcome-message">
+            <h2>Welcome back, {{ user_name }}!</h2>
+        </div>
+
+        <div class="total-emails">
+            <p>Total AI-Generated Responses: {{ total_responses }}</p>
+        </div>
     </div>
 <footer>
     <p>&copy; {{ current_year }} ICode. All rights reserved.</p>
