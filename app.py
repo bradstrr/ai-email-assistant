@@ -82,7 +82,7 @@ def oauth2callback():
     with open('token.pkl', 'wb') as token:
         pickle.dump(creds, token)
 
-    return redirect('/dashboard')
+    return redirect('/home')
 
 
 def get_email_content(service, message_id):
