@@ -283,6 +283,12 @@ def send_draft(draft_id):
 
     return redirect(url_for('view_drafts'))
 
+def get_total_drafts(service):
+    # Fetch total drafts using Gmail API (filtered by 'waiting' status)
+    results = service.users().drafts().list(userId='me').execute()
+    drafts = results.get('drafts', [])
+    return len(drafts)
+
 @app.route('/home')
 def home():
     service = gmail_authenticate()
@@ -295,7 +301,11 @@ def home():
     # Get total responses generated from the responses_count.json file
     total_responses = read_response_count()
 
-    return render_template('home.html', user_name=user_name, total_responses=total_responses)
+    # Get total drafts from Gmail API
+    total_drafts = get_total_drafts(service)
+
+    return render_template('home.html', user_name=user_name, total_responses=total_responses, total_drafts=total_drafts)
+
 
 @app.route('/save_draft/<draft_id>', methods=['POST'])
 def save_draft(draft_id):

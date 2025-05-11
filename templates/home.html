@@ -96,6 +96,50 @@
 footer p {
     margin: 0;
 }
+
+      .ai-stats-container {
+    display: flex;  /* Use flexbox to arrange items side by side */
+     justify-content: flex-start;  /* Align items to the left */
+    gap: 10px;  /* Space between the cards */
+    margin-top: 20px;  /* Space above the cards */
+}
+
+.ai-stats-card {
+    width: 250px;  /* Set a fixed width */
+    height: 250px;  /* Set the same height to make it square */
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 10px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.ai-stats-card .card-header h3 {
+    font-size: 1.5em;
+    color: #333;
+    margin: 0;
+}
+
+.ai-stats-card .stat-number h2 {
+    font-size: 1.8em;
+    font-weight: bold;
+    color: #6200ea;
+}
+
+.ai-stats-card .chart-emoji {
+    font-size: 4em;  /* Adjust size as needed */
+    margin-top: 10px;
+}
+
+.ai-stats-card .chart-emoji .emoji {
+    display: inline-block;
+    line-height: 1;
+}
+
     </style>
 </head>
 <body>
@@ -110,13 +154,38 @@ footer p {
         </div>
 
         <div class="welcome-message">
-            <h2>Welcome back, {{ user_name }}!</h2>
+            <h2>Welcome back!</h2>
         </div>
 
-        <div class="total-emails">
-            <p>Total AI-Generated Responses: {{ total_responses }}</p>
+        <div class="ai-stats-container">
+         <div class="card ai-stats-card">
+        <div class="card-header">
+            <h3>Total AI-Generated Responses</h3>
         </div>
+        <div class="card-body">
+            <div class="stat-number">
+                <h2>{{ total_responses }}</h2>
+            </div>
+            <div class="chart-emoji">
+                <span class="emoji">📈</span>
+            </div>
+        </div>
+    </div><!-- Closing the ai-stats-card div -->
+         <div class="card ai-stats-card">
+        <div class="card-header">
+            <h3>Drafts Awaiting Approval</h3>
+        </div>
+        <div class="card-body">
+            <div class="stat-number">
+                <h2>{{ total_drafts }}</h2>  <!-- This will display the total drafts -->
+            </div>
+            <div class="chart-emoji">
+                <span class="emoji">✏️</span>  <!-- Pencil emoji -->
+            </div>
+        </div>
+    </div> <!-- Closing the ai-stats-card div -->
     </div>
+        </div>
 <footer>
     <p>&copy; {{ current_year }} ICode. All rights reserved.</p>
 </footer>
