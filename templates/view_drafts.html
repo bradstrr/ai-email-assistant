@@ -298,28 +298,6 @@ function enableEditing(button) {
            toast.remove();
        }, 5000);
 }
-
-// Example of calling this function after a successful save:
-fetch('/save_draft/someDraftId', {
-    method: 'POST',
-    body: JSON.stringify({
-        body: 'Updated email body content'
-    }),
-    headers: {
-        'Content-Type': 'application/json',
-    },
-})
-.then(response => response.json())
-.then(data => {
-    if (data.success) {
-        showToast('Draft saved successfully!', true);
-    } else {
-        showToast('Failed to save draft!', false);
-    }
-})
-.catch(error => {
-    showToast('An error occurred!', false);
-});
     </script>
     <footer>
     <p>&copy; {{ current_year }} ICode. All rights reserved.</p>
