@@ -10,6 +10,7 @@ from email.mime.text import MIMEText
 import base64
 from datetime import datetime, timedelta
 import json
+from flask import jsonify
 
 load_dotenv()
 openai.api_key = os.getenv('OPENAI_API_KEY')
@@ -206,6 +207,10 @@ def view_drafts():
         results = service.users().drafts().list(userId='me').execute()
         drafts = results.get('drafts', [])
 
+        if not drafts:
+            # If no drafts exist, just return an empty list and don't show an error
+            return render_template('view_drafts.html', drafts=[])
+
         draft_details = []
         for draft in drafts:
             draft_id = draft['id']
@@ -243,9 +248,17 @@ def view_drafts():
 
         return render_template('view_drafts.html', drafts=draft_details)
 
+
     except HttpError as error:
-        print(f'An error occurred: {error}')
-        return redirect('/error')  # You can define an error page here
+
+        # Only print if it's not a "not found" error
+
+        if error.resp.status != 404:
+            print(f"An error occurred: {error}")
+
+        # Silently handle the error and don't show anything
+
+        return redirect('/view_drafts')
 
 
 @app.route('/send_draft/<draft_id>', methods=['POST'])
@@ -283,6 +296,55 @@ def home():
     total_responses = read_response_count()
 
     return render_template('home.html', user_name=user_name, total_responses=total_responses)
+
+@app.route('/save_draft/<draft_id>', methods=['POST'])
+def save_draft(draft_id):
+    data = request.get_json()
+    updated_body = data.get('body')
+
+    # Load Gmail credentials
+    token_path = os.getenv('TOKEN_PATH', 'token.pkl')
+    with open(token_path, 'rb') as token:
+        creds = pickle.load(token)
+    service = build('gmail', 'v1', credentials=creds)
+
+    # Fetch the existing draft to extract original headers
+    draft = service.users().drafts().get(userId='me', id=draft_id).execute()
+    headers = draft['message'].get('payload', {}).get('headers', [])
+
+    def get_header(name):
+        for h in headers:
+            if h['name'].lower() == name.lower():
+                return h['value']
+        return ''
+
+    to_email = data.get('to') or get_header('To')
+    subject = data.get('subject') or get_header('Subject')
+
+    # Build the updated MIME message
+    mime_message = MIMEText(updated_body)
+    mime_message['to'] = to_email
+    mime_message['subject'] = subject
+    raw_message = base64.urlsafe_b64encode(mime_message.as_bytes()).decode()
+
+    try:
+        service.users().drafts().update(
+            userId='me',
+            id=draft_id,
+            body={'message': {'raw': raw_message}}
+        ).execute()
+
+        for draft in session.get('drafts', []):
+            if draft['id'] == draft_id:
+                draft['body'] = updated_body
+                break
+
+        session.modified = True
+        return jsonify({'success': True, 'updated': True}), 200
+
+    except Exception as e:
+        print("Error updating draft:", e)
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

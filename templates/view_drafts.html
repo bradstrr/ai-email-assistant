@@ -103,7 +103,7 @@
             color: #555;
         }
 
-        .action-btn, .send-btn, .view-btn, .close-btn {
+        .action-btn, .send-btn, .view-btn, .close-btn, .edit-btn, .save-btn {
             background-color: #6200ea;
             color: white;
             border: none;
@@ -147,6 +147,21 @@
 footer p {
     margin: 0;
 }
+     .toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: green;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-size: 16px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    opacity: 1; /* Ensure it's visible immediately */
+    z-index: 9999; /* Ensure it's on top of other content */
+    transition: none; /* Remove any transition temporarily */
+}
 
     </style>
 </head>
@@ -167,9 +182,11 @@ footer p {
             <div class="empty-state">You have no drafts at the moment.</div>
         {% else %}
             {% for draft in drafts %}
-                <div class="email-card" id="card-{{ draft.id }}">
+                <div class="email-card" id="card-{{ draft.id }}" data-draft-id="{{ draft.id }}">
                     <div class="subject">{{ draft.subject }}</div>
-                    <div class="body-content">{{ draft.body }}</div>
+                    <div class="body-content" contenteditable="false">
+                        {{ draft.body }}
+                    </div>
 
                     <div class="btn-group">
                         <button class="view-btn" onclick="expandCard('{{ draft.id }}')">View</button>
@@ -177,6 +194,8 @@ footer p {
                             <button type="submit" class="send-btn">Send Email</button>
                         </form>
                         <button class="close-btn" onclick="collapseCard('{{ draft.id }}')" style="display: none;">Close</button>
+                        <button class="edit-btn" onclick="enableEditing(this)" style="display: none;">Edit</button>
+                        <button class="save-btn" onclick="saveEditedContent(this)" style="display: none;">Save</button>
                     </div>
                 </div>
             {% endfor %}
@@ -184,19 +203,123 @@ footer p {
     </div>
 
     <script>
-        function expandCard(id) {
-            const card = document.getElementById('card-' + id);
-            card.classList.add('expanded');
-            card.querySelector('.close-btn').style.display = 'inline-block';
-            card.querySelector('.view-btn').style.display = 'none';
-        }
+       function expandCard(id) {
+    const card = document.getElementById('card-' + id);
+    card.classList.add('expanded');
 
-        function collapseCard(id) {
-            const card = document.getElementById('card-' + id);
-            card.classList.remove('expanded');
-            card.querySelector('.close-btn').style.display = 'none';
-            card.querySelector('.view-btn').style.display = 'inline-block';
+    const closeBtn = card.querySelector('.close-btn');
+    const viewBtn = card.querySelector('.view-btn');
+    const editBtn = card.querySelector('.edit-btn');
+    const saveBtn = card.querySelector('.save-btn');
+
+    if (closeBtn) closeBtn.style.display = 'inline-block';
+    if (viewBtn) viewBtn.style.display = 'none';
+    if (editBtn) editBtn.style.display = 'inline-block';
+    if (saveBtn) saveBtn.style.display = 'inline-block';
+}
+
+       function collapseCard(id) {
+    const card = document.getElementById('card-' + id);
+    card.classList.remove('expanded');
+
+    const closeBtn = card.querySelector('.close-btn');
+    const viewBtn = card.querySelector('.view-btn');
+    const editBtn = card.querySelector('.edit-btn');
+    const saveBtn = card.querySelector('.save-btn');
+
+    if (closeBtn) closeBtn.style.display = 'none';
+    if (viewBtn) viewBtn.style.display = 'inline-block';
+    if (editBtn) editBtn.style.display = 'none'; // Hide the edit button again
+    if (saveBtn) saveBtn.style.display = 'none'; // Hide the save button again
+}
+
+function enableEditing(button) {
+    const card = button.closest('.email-card');
+    const content = card.querySelector('.body-content');
+    const saveBtn = card.querySelector('.save-btn');
+
+    if (content) {
+        content.contentEditable = true;
+        content.focus();
+        content.style.outline = '2px solid #6200ea';
+    }
+
+    if (saveBtn) {
+        saveBtn.style.display = 'inline-block';
+    }
+}
+        function saveEditedContent(button) {
+    const card = button.closest('.email-card');
+    const content = card.querySelector('.body-content');
+    const draftId = card.dataset.draftId;
+
+    const updatedText = content.innerText;
+
+    fetch(`/save_draft/${draftId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ body: updatedText })
+    })
+    .then(response => response.json()) // Ensure we're parsing the JSON
+    .then(data => {
+        if (data.success) {
+            content.contentEditable = false;
+            content.style.outline = 'none';
+            button.style.display = 'none';
+            showToast("Draft saved successfully!", true); // Show success toast
+        } else {
+            showToast("Failed to save draft.", false); // Show error toast
         }
+    })
+    .catch(error => {
+        showToast("An error occurred!", false); // Show error toast
+    });
+}
+
+    function showToast(message, isSuccess) {
+       console.log("Toast message triggered:", message); // Debugging line
+
+
+       const toast = document.createElement("div");
+       toast.classList.add("toast");
+       toast.textContent = message;
+
+       if (isSuccess) {
+           toast.style.backgroundColor = "green";
+       } else {
+           toast.style.backgroundColor = "red";
+       }
+
+       document.body.appendChild(toast);
+
+       setTimeout(() => {
+           toast.remove();
+       }, 5000);
+}
+
+// Example of calling this function after a successful save:
+fetch('/save_draft/someDraftId', {
+    method: 'POST',
+    body: JSON.stringify({
+        body: 'Updated email body content'
+    }),
+    headers: {
+        'Content-Type': 'application/json',
+    },
+})
+.then(response => response.json())
+.then(data => {
+    if (data.success) {
+        showToast('Draft saved successfully!', true);
+    } else {
+        showToast('Failed to save draft!', false);
+    }
+})
+.catch(error => {
+    showToast('An error occurred!', false);
+});
     </script>
     <footer>
     <p>&copy; {{ current_year }} ICode. All rights reserved.</p>
