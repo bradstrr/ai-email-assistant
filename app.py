@@ -11,6 +11,7 @@ import base64
 from datetime import datetime, timedelta
 import json
 from flask import jsonify
+import random
 
 load_dotenv()
 openai.api_key = os.getenv('OPENAI_API_KEY')
@@ -289,6 +290,35 @@ def get_total_drafts(service):
     drafts = results.get('drafts', [])
     return len(drafts)
 
+quote_styles = [
+    "motivational", "sarcastic", "wise", "funny"
+]
+
+def generate_ai_quote():
+    style = random.choice(["motivational", "sarcastic", "wise", "funny"])
+    prompt = f"Give me a short, {style} one-liner joke from an AI assistant that helps automate emails. Keep it under 15 words."
+
+    response = openai.ChatCompletion.create(
+        model="gpt-4-turbo",
+        messages=[
+            {"role": "system", "content": "You are a witty, funny AI assistant who helps people automate their emails."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.9
+    )
+
+    return response['choices'][0]['message']['content'].strip()
+
+def get_energy_status():
+    energy_levels = [
+        {"emoji": "☕", "message": "Running on caffeine and hope."},
+        {"emoji": "🥱", "message": "Alertness: minimal."},
+        {"emoji": "⚡", "message": "Over-caffeinated and overconfident."},
+        {"emoji": "🧘", "message": "Zen mode: activated (for now)."},
+        {"emoji": "🤖", "message": "Artificial energy levels detected."}
+    ]
+    return random.choice(energy_levels)
+
 @app.route('/home')
 def home():
     service = gmail_authenticate()
@@ -300,12 +330,18 @@ def home():
 
     # Get total responses generated from the responses_count.json file
     total_responses = read_response_count()
-
-    # Get total drafts from Gmail API
     total_drafts = get_total_drafts(service)
+    ai_quote = generate_ai_quote()
+    energy_status = get_energy_status()
 
-    return render_template('home.html', user_name=user_name, total_responses=total_responses, total_drafts=total_drafts)
-
+    return render_template(
+        'home.html',
+        user_name=user_name,
+        total_responses=total_responses,
+        total_drafts=total_drafts,
+        ai_quote=ai_quote,
+        energy_status=energy_status
+    )
 
 @app.route('/save_draft/<draft_id>', methods=['POST'])
 def save_draft(draft_id):

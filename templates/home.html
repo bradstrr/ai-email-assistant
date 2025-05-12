@@ -37,7 +37,7 @@
         }
 
         .quick-links {
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
             text-align: center; /* Centered action buttons */
         }
 
@@ -49,7 +49,7 @@
             font-size: 1.5rem;
             font-weight: 600;
             color: #f0f0f0;
-            margin-bottom: 2rem;
+            margin-bottom: 1rem;
             text-align: center; /* Centered welcome message */
         }
 
@@ -86,7 +86,7 @@
     background-color: #1e1e1e; /* Dark background for the footer */
     color: #bbb; /* Light text color */
     text-align: center;
-    padding: 1rem;
+    padding: 0.5rem;
     position: fixed;
     width: 100%;
     bottom: 0;
@@ -101,12 +101,12 @@ footer p {
     display: flex;  /* Use flexbox to arrange items side by side */
      justify-content: flex-start;  /* Align items to the left */
     gap: 10px;  /* Space between the cards */
-    margin-top: 20px;  /* Space above the cards */
+    margin-top: 10px;  /* Space above the cards */
 }
 
 .ai-stats-card {
     width: 250px;  /* Set a fixed width */
-    height: 250px;  /* Set the same height to make it square */
+    height: 275px;  /* Set the same height to make it square */
     background-color: #fff;
     border-radius: 12px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -140,6 +140,37 @@ footer p {
     line-height: 1;
 }
 
+        .stat-quote {
+    max-width: 100%;
+    padding: 0 10px;
+    text-align: center;
+}
+
+.ai-quote {
+    font-size: 1.1rem;
+    font-style: italic;
+    font-weight: bold;
+    line-height: 1.4;
+    color: #6200ea;
+    word-wrap: break-word;
+}
+        #snakeCanvas {
+  display: block;
+  margin: 0 auto;
+  border-radius: 8px;
+  background-color: #0e0e1e;
+}
+        #playAgainBtn  {
+    background-color: #6200ea; /* Vibrant accent color */
+    color: white; /* White text */
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-top: auto;
+    align-self: center; /* Center the button horizontally */
+}
     </style>
 </head>
 <body>
@@ -158,7 +189,7 @@ footer p {
         </div>
 
         <div class="ai-stats-container">
-         <div class="card ai-stats-card">
+    <div class="card ai-stats-card">
         <div class="card-header">
             <h3>Total AI-Generated Responses</h3>
         </div>
@@ -170,28 +201,142 @@ footer p {
                 <span class="emoji">📈</span>
             </div>
         </div>
-    </div><!-- Closing the ai-stats-card div -->
-         <div class="card ai-stats-card">
+    </div>
+
+    <div class="card ai-stats-card">
         <div class="card-header">
             <h3>Drafts Awaiting Approval</h3>
         </div>
         <div class="card-body">
             <div class="stat-number">
-                <h2>{{ total_drafts }}</h2>  <!-- This will display the total drafts -->
+                <h2>{{ total_drafts }}</h2>
             </div>
             <div class="chart-emoji">
-                <span class="emoji">✏️</span>  <!-- Pencil emoji -->
+                <span class="emoji">✏️</span>
             </div>
         </div>
-    </div> <!-- Closing the ai-stats-card div -->
     </div>
+
+            <div class="card ai-stats-card">
+    <div class="card-header">
+        <h3>Snake on Your Break 🐍</h3>
+    </div>
+    <div class="card-body">
+        <canvas id="snakeCanvas" width="180" height="180"></canvas>
+        <button id="playAgainBtn" style="display:none; margin-top: 10px;">Play Again</button>
+    </div>
+</div>
+
+   <div class="card ai-stats-card">
+    <div class="card-header">
+        <h3>Your AI says:</h3>
+    </div>
+    <div class="card-body">
+        <div class="stat-quote">
+            <p class="ai-quote">“{{ ai_quote }}”</p>
         </div>
+        <div class="chart-emoji">
+            <span class="emoji">🤖</span>
+        </div>
+    </div>
+</div>
+            <div class="card ai-stats-card">
+    <div class="card-header">
+        <h3>Energy Level</h3>
+    </div>
+    <div class="card-body">
+        <div class="stat-quote">
+            <p class="ai-quote">
+                {{ energy_status.emoji }} {{ energy_status.message }}
+            </p>
+        </div>
+        <div class="chart-emoji">
+            <span class="emoji">⚡</span> <!-- Optional: pick an icon here -->
+        </div>
+    </div>
+</div>
+</div>
+  </div>
+    <!--
 <footer>
     <p>&copy; {{ current_year }} ICode. All rights reserved.</p>
 </footer>
+-->
 <script>
     const currentYear = new Date().getFullYear();
     document.querySelector("footer p").innerHTML = `&copy; ${currentYear} ICode. All rights reserved.`;
+</script>
+<script>
+const canvas = document.getElementById("snakeCanvas");
+const ctx = canvas.getContext("2d");
+const playAgainBtn = document.getElementById("playAgainBtn");
+
+let gridSize = 9;
+let tileCount = canvas.width / gridSize;
+let snake, food, dx, dy, gameOver;
+
+function initGame() {
+    snake = [{ x: 10, y: 10 }];
+    food = { x: 12, y: 12 };
+    dx = 1;
+    dy = 0;
+    gameOver = false;
+    playAgainBtn.style.display = "none";
+    draw(); // Start drawing immediately
+}
+
+function draw() {
+    if (gameOver) return;
+
+    const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+    snake.unshift(head);
+
+    if (head.x === food.x && head.y === food.y) {
+        food = {
+            x: Math.floor(Math.random() * tileCount),
+            y: Math.floor(Math.random() * tileCount)
+        };
+    } else {
+        snake.pop();
+    }
+
+    if (
+        head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount ||
+        snake.slice(1).some(seg => seg.x === head.x && seg.y === head.y)
+    ) {
+        gameOver = true;
+        playAgainBtn.style.display = "inline-block";
+        return;
+    }
+
+    ctx.fillStyle = "#1e1e2f";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = "#7C3AED";
+    snake.forEach(part => {
+        ctx.fillRect(part.x * gridSize, part.y * gridSize, gridSize - 1, gridSize - 1);
+    });
+
+    ctx.fillStyle = "#F59E0B";
+    ctx.fillRect(food.x * gridSize, food.y * gridSize, gridSize - 1, gridSize - 1);
+}
+
+document.addEventListener("keydown", e => {
+    if (e.key === "ArrowUp" && dy === 0) { dx = 0; dy = -1; }
+    if (e.key === "ArrowDown" && dy === 0) { dx = 0; dy = 1; }
+    if (e.key === "ArrowLeft" && dx === 0) { dx = -1; dy = 0; }
+    if (e.key === "ArrowRight" && dx === 0) { dx = 1; dy = 0; }
+});
+
+playAgainBtn.addEventListener("click", () => {
+    initGame();
+});
+
+setInterval(() => {
+    draw();
+}, 100);
+
+initGame(); // Start the game on page load
 </script>
 </body>
 </html>
