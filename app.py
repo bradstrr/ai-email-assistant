@@ -189,6 +189,13 @@ def dashboard():
 
         print(f"Draft created with ID: {draft['id']}")  # For debugging
 
+        # Mark the email as read after creating a draft
+        service.users().messages().modify(
+            userId='me',
+            id=msg['id'],
+            body={'removeLabelIds': ['UNREAD']}
+        ).execute()
+
         email_data.append({
             'id': msg['id'],
             'subject': subject,
