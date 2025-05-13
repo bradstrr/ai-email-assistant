@@ -190,6 +190,58 @@ footer p {
 .delete-btn:hover {
     background-color: #9a0007; /* Darker red */
 }
+        @media (max-width: 768px) {
+    header h1 {
+        font-size: 1.5rem;
+    }
+
+    .container {
+        padding: 1rem;
+    }
+
+    .email-card {
+        padding: 1rem;
+    }
+
+    .btn-group {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .btn-group button,
+    .btn-group form {
+        width: 100%;
+        margin: 0.3rem 0;
+    }
+
+    .action-btn {
+        width: 100%;
+        margin: 0.3rem 0;
+    }
+
+    .header-action {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .email-card.expanded {
+        height: 90vh;
+        padding: 1.5rem;
+    }
+
+    .settings-icon {
+        right: 10px;
+        font-size: 20px;
+    }
+
+    footer {
+        font-size: 0.75rem;
+        padding: 0.7rem;
+    }
+}
+
     </style>
 </head>
 <body>
@@ -331,6 +383,59 @@ function enableEditing(button) {
            toast.remove();
        }, 5000);
 }
+        document.addEventListener('DOMContentLoaded', () => {
+    // VIEW button
+    document.querySelectorAll('.view-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            const card = button.closest('.email-card');
+            const draftId = card.dataset.draftId;
+            expandCard(draftId);
+        });
+    });
+
+    // CLOSE button
+    document.querySelectorAll('.close-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            const card = button.closest('.email-card');
+            const draftId = card.dataset.draftId;
+            collapseCard(draftId);
+        });
+    });
+
+    // EDIT button
+    document.querySelectorAll('.edit-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            enableEditing(button);
+        });
+    });
+
+    // SAVE button
+    document.querySelectorAll('.save-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            saveEditedContent(button);
+        });
+    });
+
+    // SEND button
+    document.querySelectorAll('.send-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            // You can define this function or link it to your existing one
+            const card = button.closest('.email-card');
+            const draftId = card.dataset.draftId;
+            console.log("Send button clicked for draft:", draftId);
+        });
+    });
+
+    // DELETE button
+    document.querySelectorAll('.delete-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            // You can define this function or link it to your existing one
+            const card = button.closest('.email-card');
+            const draftId = card.dataset.draftId;
+            console.log("Delete button clicked for draft:", draftId);
+        });
+    });
+});
     </script>
     <footer>
     <p>&copy; {{ current_year }} ICode. All rights reserved.</p>

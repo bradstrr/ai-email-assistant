@@ -183,6 +183,25 @@ footer p {
     margin-top: auto;
     align-self: center; /* Center the button horizontally */
 }
+        @media (max-width: 768px) {
+    .ai-stats-container {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .ai-stats-card {
+        width: 90%; /* Use most of the screen width on mobile */
+        margin-bottom: 15px;
+    }
+
+    .quick-links .action-btn {
+        display: block;
+        margin: 0.5rem auto;
+    }
+}
+        body {
+    overflow-x: hidden;
+}
     </style>
 </head>
 <body>
