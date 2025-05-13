@@ -56,6 +56,9 @@ def increment_response_count():
 
 @app.route('/authorize')
 def authorize():
+    next_url = request.args.get('next', '/')  # Default to home page
+    session['next_url'] = next_url  # Store it for use after callback
+
     flow = Flow.from_client_secrets_file(
         'credentials.json',
         scopes=SCOPES,
@@ -84,7 +87,8 @@ def oauth2callback():
     with open('token.pkl', 'wb') as token:
         pickle.dump(creds, token)
 
-    return redirect('/home')
+    next_url = session.pop('next_url', '/home')  # Default to /home if not set
+    return redirect(next_url)
 
 
 def get_email_content(service, message_id):
@@ -441,7 +445,7 @@ def save_user_settings(email, website, signature):
 @app.route('/settings', methods=['GET'])
 def settings_page():
     if 'email' not in session:
-        return redirect('/authorize')  # Or however you manage login
+        return redirect(url_for('authorize', next=request.path))
 
     user_email = session['email']
     settings = load_user_settings(user_email)
