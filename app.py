@@ -8,10 +8,10 @@ from dotenv import load_dotenv
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import base64
-from datetime import datetime, timedelta
 import json
 from flask import jsonify
 import random
+from flask import flash
 
 load_dotenv()
 openai.api_key = os.getenv('OPENAI_API_KEY')
@@ -86,6 +86,14 @@ def oauth2callback():
     creds = flow.credentials
     with open('token.pkl', 'wb') as token:
         pickle.dump(creds, token)
+
+        # Fetch the user's email from the credentials
+        service = build('gmail', 'v1', credentials=creds)
+        user_info = service.users().getProfile(userId='me').execute()
+        user_email = user_info['emailAddress']
+
+        # Save email in session
+        session['email'] = user_email
 
     next_url = session.pop('next_url', '/home')  # Default to /home if not set
     return redirect(next_url)
@@ -431,40 +439,74 @@ def load_user_settings(email):
         return {}
     with open(SETTINGS_FILE, 'r') as f:
         all_settings = json.load(f)
+
+    # Fetch settings using the user's email
     return all_settings.get(email, {})
+
 
 def save_user_settings(email, website, signature):
     all_settings = {}
     if os.path.exists(SETTINGS_FILE):
         with open(SETTINGS_FILE, 'r') as f:
             all_settings = json.load(f)
+
+    # Save settings under the user's email instead of "default"
     all_settings[email] = {'website': website, 'signature': signature}
+
     with open(SETTINGS_FILE, 'w') as f:
         json.dump(all_settings, f, indent=2)
 
-@app.route('/settings', methods=['GET'])
-def settings_page():
-    if 'email' not in session:
-        return redirect(url_for('authorize', next=request.path))
 
-    user_email = session['email']
-    settings = load_user_settings(user_email)
+# Updated function to pass email to save_user_settings
+@app.route('/settings', methods=['GET', 'POST'])
+def settings():
+    # Handle form submission for website link and signature
+    if request.method == 'POST':
+        website_link = request.form['website_link']
+        email_signature = request.form['email_signature']
 
+        # Get the user's email from session
+        user_email = session.get('email', '')
+
+        # Save these values to session and data file
+        session['website_link'] = website_link
+        session['email_signature'] = email_signature
+
+        if user_email:  # Ensure email exists in session
+            save_user_settings(user_email, website_link, email_signature)  # Pass email
+
+        flash('Settings updated successfully!', 'success')
+
+    # Retrieve saved settings from the session or data file
+    website_link = session.get('website_link', '')
+    email_signature = session.get('email_signature', '')
+
+    # Render the settings page with the current values
     return render_template('settings.html',
-                           website=settings.get('website', ''),
-                           signature=settings.get('signature', ''))
+                           website_link=website_link,
+                           email_signature=email_signature)
+
 
 @app.route('/save_settings', methods=['POST'])
 def save_settings():
-    if 'email' not in session:
-        return redirect('/authorize')
-
-    user_email = session['email']
+    # Get the settings from the form
     website = request.form.get('website', '').strip()
     signature = request.form.get('signature', '').strip()
 
-    save_user_settings(user_email, website, signature)
+    print(f"Session email: {session.get('email')}")  # Debugging
 
+    # Save these values in session
+    session['website_link'] = website
+    session['email_signature'] = signature
+
+    # Get the user's email from session
+    user_email = session.get('email', '')
+
+    # Optionally, save user settings to the data file or database
+    if user_email:  # Ensure email exists in session
+        save_user_settings(user_email, website, signature)  # Pass email
+
+    flash('Settings updated successfully!', 'success')
     return redirect('/settings')
 
 if __name__ == '__main__':

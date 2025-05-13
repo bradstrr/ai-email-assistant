@@ -73,16 +73,17 @@
 </head>
 <body>
   <div class="settings-container">
+    <button onclick="window.history.back()" class="btn btn-primary">Back</button>
     <h2>Bot Settings</h2>
-    <form method="POST" action="/save_settings">
-      <label for="website">Your Website Link</label>
-      <input type="text" id="website" name="website" placeholder="https://yourcompany.com" value="{{ website }}">
+    <form action="/save_settings" method="POST">
+    <label for="website">Website Link:</label>
+    <input type="text" id="website" name="website" value="{{ website_link }}">
 
-      <label for="signature">Email Signature</label>
-      <textarea id="signature" name="signature" placeholder="e.g. Kind regards, The [Company Name] Support Team">{{ signature }}</textarea>
+    <label for="signature">Email Signature:</label>
+    <textarea id="signature" name="signature">{{ email_signature }}</textarea>
 
-      <button type="submit">Save Settings</button>
-    </form>
+    <button type="submit">Save Settings</button>
+</form>
   </div>
 </body>
 </html>
