@@ -511,12 +511,16 @@ def save_settings():
 
 @app.route('/delete_draft/<draft_id>', methods=['POST'])
 def delete_draft(draft_id):
+    service = gmail_authenticate()  # Use the same authenticate function
+
+    if not service:
+        return redirect('/authorize')
+
     try:
-        service = build('gmail', 'v1', credentials=session.get('credentials'))  # Use your stored credentials
         service.users().drafts().delete(userId='me', id=draft_id).execute()
     except Exception as e:
         print(f"Failed to delete draft: {e}")
-        # You could flash an error message or log it
+        # Optionally, flash an error message
     return redirect(url_for('view_drafts'))
 
 if __name__ == '__main__':
