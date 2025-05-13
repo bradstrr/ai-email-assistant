@@ -509,5 +509,15 @@ def save_settings():
     flash('Settings updated successfully!', 'success')
     return redirect('/settings')
 
+@app.route('/delete_draft/<draft_id>', methods=['POST'])
+def delete_draft(draft_id):
+    try:
+        service = build('gmail', 'v1', credentials=session.get('credentials'))  # Use your stored credentials
+        service.users().drafts().delete(userId='me', id=draft_id).execute()
+    except Exception as e:
+        print(f"Failed to delete draft: {e}")
+        # You could flash an error message or log it
+    return redirect(url_for('view_drafts'))
+
 if __name__ == '__main__':
     app.run(debug=True)
