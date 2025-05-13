@@ -109,11 +109,31 @@ def get_email_content(service, message_id):
 
 
 def generate_email_response(email_body):
+    user_email = session.get('email', '')
+    user_settings = load_user_settings(user_email)
+
+    website = user_settings.get('website', '')
+    signature = user_settings.get('signature', '')
+
+    # Construct the prompt with optional website context
+    prompt = f"""You are an AI assistant for a support team.
+Your job is to write professional and helpful replies to customer emails.
+{f"The company website is: {website}. Use relevant information from the website to inform your response." if website else "No website was provided, so respond based solely on the email content."}
+Respond to the following email:
+
+{email_body}
+
+End your response with the following signature:
+{signature if signature else "Kind regards, Support Team"}"""
+
     response = openai.ChatCompletion.create(
-        model="gpt-4-turbo",  # Using GPT-4-turbo for the AI respons
-        messages=[{"role": "system", "content": "You are a helpful assistant."},
-                  {"role": "user", "content": f"Respond to the following email:\n\n{email_body}"}]
+        model="gpt-4-turbo",
+        messages=[
+            {"role": "system", "content": "You are a helpful support assistant."},
+            {"role": "user", "content": prompt}
+        ]
     )
+
     return response.choices[0].message.content
 
 
@@ -398,6 +418,50 @@ def save_draft(draft_id):
     except Exception as e:
         print("Error updating draft:", e)
         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+SETTINGS_FILE = 'data/settings.json'
+
+def load_user_settings(email):
+    if not os.path.exists(SETTINGS_FILE):
+        return {}
+    with open(SETTINGS_FILE, 'r') as f:
+        all_settings = json.load(f)
+    return all_settings.get(email, {})
+
+def save_user_settings(email, website, signature):
+    all_settings = {}
+    if os.path.exists(SETTINGS_FILE):
+        with open(SETTINGS_FILE, 'r') as f:
+            all_settings = json.load(f)
+    all_settings[email] = {'website': website, 'signature': signature}
+    with open(SETTINGS_FILE, 'w') as f:
+        json.dump(all_settings, f, indent=2)
+
+@app.route('/settings', methods=['GET'])
+def settings_page():
+    if 'email' not in session:
+        return redirect('/authorize')  # Or however you manage login
+
+    user_email = session['email']
+    settings = load_user_settings(user_email)
+
+    return render_template('settings.html',
+                           website=settings.get('website', ''),
+                           signature=settings.get('signature', ''))
+
+@app.route('/save_settings', methods=['POST'])
+def save_settings():
+    if 'email' not in session:
+        return redirect('/authorize')
+
+    user_email = session['email']
+    website = request.form.get('website', '').strip()
+    signature = request.form.get('signature', '').strip()
+
+    save_user_settings(user_email, website, signature)
+
+    return redirect('/settings')
 
 if __name__ == '__main__':
     app.run(debug=True)

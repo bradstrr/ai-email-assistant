@@ -17,12 +17,24 @@
         }
 
         header {
-            background-color: #1e1e1e; /* Dark header */
-            padding: 20px;
-            text-align: center;
-            color: #ffffff;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-        }
+    display: flex;
+    justify-content: center;  /* Center the home title */
+    align-items: center;
+    padding: 10px 20px;  /* Adjust padding for spacing */
+    position: relative;
+}
+
+.settings-icon {
+    font-size: 24px; /* Adjust the size of the icon */
+    cursor: pointer;
+    text-decoration: none;
+    position: absolute;
+    right: 20px;  /* Adjust the distance from the right edge */
+}
+
+.settings-icon:hover {
+    color: #007bff;  /* Change color on hover */
+}
 
         header h1 {
             margin: 0;
@@ -176,6 +188,9 @@ footer p {
 <body>
     <header>
         <h1>Home</h1>
+        <a href="/settings" class="settings-icon" title="Settings">
+            ⚙️
+        </a>
     </header>
 
     <div class="container">
