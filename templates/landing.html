@@ -1,0 +1,295 @@
+<!-- templates/landing.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Your AI Email Assistant</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Helvetica Neue', sans-serif;
+      background-color: #f9f9f9;
+      color: #333;
+    }
+
+    .hero {
+      background-color: #f0f0f0;
+      color: white;
+      padding: 20px 20px;
+      text-align: center;
+    }
+
+    .hero h1 {
+      font-size: 3em;
+      margin-bottom: 30px;
+      color: #000000;
+    }
+
+    .hero p {
+      font-size: 1.2em;
+      max-width: 600px;
+      margin: 0 auto 30px;
+      color: #666;
+    }
+
+    .cta-button {
+      background-color: #ffffff;
+      color: #000000;
+      padding: 12px 30px;
+      border: none;
+      border-radius: 30px;
+      font-size: 1em;
+      font-weight: bold;
+      text-decoration: none;
+      transition: background 0.3s ease;
+    }
+
+    .cta-button:hover {
+      background-color: #e6e6e6;
+    }
+
+    .features {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 40px;
+      padding: 40px 20px;
+      background-color: #ffffff;
+    }
+
+    .feature {
+      max-width: 600px;
+      text-align: center;
+    }
+
+    .feature img {
+      width: 100%;
+       max-width: 550px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    .feature h2 {
+      margin-top: 20px;
+      font-size: 1.5em;
+    }
+
+    .feature p {
+      font-size: 1em;
+      color: #555;
+    }
+
+    .contact {
+      background-color: #f0f0f0;
+      padding: 10px 10px;
+      text-align: center;
+    }
+
+    .contact h2 {
+      font-size: 2em;
+      margin-bottom: 10px;
+    }
+
+    .contact p {
+      font-size: 1em;
+      color: #666;
+      margin-bottom: 20px;
+    }
+
+    .contact input[type="email"] {
+      padding: 12px;
+      width: 250px;
+      max-width: 80%;
+      margin-right: 10px;
+      border: 1px solid #ccc;
+      border-radius: 30px;
+    }
+
+    .contact button {
+      padding: 12px 25px;
+      border: none;
+      border-radius: 30px;
+      background-color: #0055a5;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .contact button:hover {
+      background-color: #004080;
+    }
+
+    footer {
+      text-align: center;
+      padding: 10px;
+      background-color: #002244;
+      color: white;
+    }
+
+    @media (max-width: 768px) {
+      .features {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .hero h1 {
+        font-size: 2em;
+      }
+
+      .cta-button {
+        font-size: 0.9em;
+      }
+    }
+    .access-btn {
+    background-color: black;
+    color: white;
+    font-size: 1rem;
+    padding: 0.8em 1.6em;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    margin-top: 1rem;
+  }
+
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 99;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    backdrop-filter: blur(5px);
+    background-color: rgba(0, 0, 0, 0.6);
+    justify-content: center;
+    align-items: center;
+  }
+
+  .modal-content {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 12px;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 0 30px rgba(0,0,0,0.2);
+  }
+
+  .modal-content input {
+    width: 80%;
+    padding: 10px;
+    margin: 0.5rem 0;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 1rem;
+  }
+
+  .modal-content button {
+    background-color: black;
+    color: white;
+    padding: 0.6rem 1.4rem;
+    border: none;
+    border-radius: 30px;
+    font-size: 1rem;
+    margin-top: 1rem;
+    cursor: pointer;
+  }
+
+  .close {
+    float: right;
+    font-size: 1.4rem;
+    cursor: pointer;
+  }
+
+  .error-msg {
+    color: red;
+    margin-top: 1rem;
+  }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-content">
+      <h1>ICode Email Automation</h1>
+      <p>Instantly draft context-aware, professional replies using your website and email history.</p>
+      <button class="cta-button" onclick="toggleModal()">Access Dashboard</button>
+    </div>
+  </header>
+
+  <section class="features">
+    <div class="feature">
+      <img src="{{ url_for('static', filename='images/draft.png') }}" alt="Email Draft Preview">
+      <h2>Smart Replies</h2>
+      <p>Uses your email and website to generate drafts that sound like you — and save you hours.</p>
+    </div>
+    <div class="feature">
+      <img src="{{ url_for('static', filename='images/dashboard.png') }}" alt="AI Dashboard Preview">
+      <h2>Informative Dashboard</h2>
+      <p>Track your AI usage and manage your settings from one clean, intuitive hub.</p>
+    </div>
+    <div class="feature">
+    <img src="{{ url_for('static', filename='images/settings.png') }}" alt="Tailored Context Feature">
+    <h2>Tailored Settings and Web Context</h2>
+    <p>Customize your email style and let the AI learn from your website to craft more relevant replies.</p>
+  </div>
+  </section>
+
+  <section id="contact" class="contact">
+    <h2>Get in Touch</h2>
+    <p>Interested in using the assistant or learning more? Drop your email below.</p>
+    <form action="mailto:your@email.com" method="POST" enctype="text/plain">
+      <input type="email" name="email" placeholder="Your email address" required>
+      <button type="submit">Contact Us</button>
+    </form>
+  </section>
+
+  <footer>
+    <p>&copy; 2025 ICode Automation. All rights reserved.</p>
+  </footer>
+<div id="accessModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="toggleModal()">&times;</span>
+    <h2>Login to Access Dashboard</h2>
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="pin" placeholder="PIN">
+    <button onclick="submitAccess()">Submit</button>
+    <p id="errorMsg" class="error-msg"></p>
+  </div>
+</div>
+<script>
+  function toggleModal() {
+    const modal = document.getElementById('accessModal');
+    modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+    document.getElementById('errorMsg').innerText = '';
+  }
+
+  function submitAccess() {
+    const username = document.getElementById('username').value.trim();
+    const pin = document.getElementById('pin').value.trim();
+
+    fetch('/verify-pin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, pin })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        window.location.href = '/authorize';
+      } else {
+        document.getElementById('errorMsg').innerText = 'Incorrect username or pin.';
+      }
+    });
+  }
+
+  // Close modal when clicking outside
+  window.onclick = function(event) {
+    const modal = document.getElementById('accessModal');
+    if (event.target === modal) {
+      modal.style.display = "none";
+    }
+  };
+</script>
+</body>
+</html>

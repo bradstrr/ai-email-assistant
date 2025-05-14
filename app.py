@@ -264,7 +264,7 @@ def create_draft(service, sender, subject, recipient, body):
 
     return draft
 
-@app.route('/')
+@app.route('/start')
 def index():
     user_email = session.get('email')  # Get the user email from session
 
@@ -278,6 +278,19 @@ def index():
         return redirect('/authorize')
     return redirect('/home')
 
+@app.route('/')
+def landing():
+    return render_template('landing.html')
+
+@app.route('/verify-pin', methods=['POST'])
+def verify_pin():
+    data = request.get_json()
+    username = data.get('username')
+    pin = data.get('pin')
+
+    if username == 'ADMIN' and pin == '2606':
+        return jsonify({'success': True})
+    return jsonify({'success': False})
 
 @app.route('/dashboard')
 def dashboard():
