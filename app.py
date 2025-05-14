@@ -290,6 +290,10 @@ def landing():
             return redirect('/')
     return render_template('landing.html')
 
+@app.route('/faq')
+def faq():
+    return render_template('faq.html')
+
 @app.route('/verify-pin', methods=['POST'])
 def verify_pin():
     data = request.get_json()
