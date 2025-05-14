@@ -12,6 +12,36 @@ import json
 from flask import jsonify
 import random
 from flask import flash
+from google.auth.transport.requests import Request
+
+TOKEN_DIR = 'tokens'  # Make sure this directory exists
+os.makedirs(TOKEN_DIR, exist_ok=True)
+
+def get_token_path(user_email):
+    """Generate token path for each user based on email"""
+    safe_email = user_email.replace('@', '_at_')  # basic sanitization
+    return os.path.join(TOKEN_DIR, f'{safe_email}_token.pkl')
+
+def save_user_credentials(creds, user_email):
+    """Save user's credentials to their own token file"""
+    token_path = get_token_path(user_email)
+    with open(token_path, 'wb') as token_file:
+        pickle.dump(creds, token_file)
+
+def load_user_credentials(user_email):
+    """Load credentials for the user"""
+    token_path = get_token_path(user_email)
+    creds = None
+
+    if os.path.exists(token_path):
+        with open(token_path, 'rb') as token_file:
+            creds = pickle.load(token_file)
+
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+            save_user_credentials(creds, user_email)
+
+    return creds
 
 load_dotenv()
 openai.api_key = os.getenv('OPENAI_API_KEY')
@@ -29,13 +59,13 @@ def save_credentials_from_env():
 
 save_credentials_from_env()  # Save credentials on app start
 
-def gmail_authenticate():
-    creds = None
-    if os.path.exists('token.pkl'):
-        with open('token.pkl', 'rb') as token:
-            creds = pickle.load(token)
+
+def gmail_authenticate(user_email):
+    creds = load_user_credentials(user_email)  # Using your existing logic to load the user's token
+
     if not creds:
         return None
+
     return build('gmail', 'v1', credentials=creds)
 
 def read_response_count():
@@ -53,53 +83,85 @@ def increment_response_count():
         json.dump({"response_count": count}, f)
 
 
-
 @app.route('/authorize')
 def authorize():
-    next_url = request.args.get('next', '/')  # Default to home page
-    session['next_url'] = next_url  # Store it for use after callback
+    # Check if the user is already authenticated (e.g., via session)
+    if 'credentials' in session:  # User is already authenticated
+        return redirect(url_for('home'))  # Or whatever page you want them to go to after they are logged in
 
+    # If the user is not authenticated, start the OAuth flow
     flow = Flow.from_client_secrets_file(
         'credentials.json',
         scopes=SCOPES,
-        redirect_uri=url_for('oauth2callback', _external=True)
+        redirect_uri=url_for('oauth2callback', _external=True)  # This should match your Google Console redirect URI
     )
+
+    # Generate the authorization URL
     authorization_url, state = flow.authorization_url(
         access_type='offline',
         prompt='consent'
     )
+
+    # Store the state in session to validate on callback
     session['state'] = state
+
+    # Redirect the user to the authorization URL
     return redirect(authorization_url)
 
 
 @app.route('/oauth2callback')
 def oauth2callback():
-    state = session['state']
+    state = session.get('state')
+
+    if not state:
+        # Handle the error where session state is missing
+        return redirect(url_for('index'))  # Or redirect to an error page
+
     flow = Flow.from_client_secrets_file(
         'credentials.json',
         scopes=SCOPES,
         state=state,
         redirect_uri=url_for('oauth2callback', _external=True)
     )
+
+    # Fetch the token and validate
     flow.fetch_token(authorization_response=request.url)
-
     creds = flow.credentials
-    with open('token.pkl', 'wb') as token:
-        pickle.dump(creds, token)
 
-        # Fetch the user's email from the credentials
-        service = build('gmail', 'v1', credentials=creds)
+    # Build Gmail service to get user email
+    service = build('gmail', 'v1', credentials=creds)
+    try:
         user_info = service.users().getProfile(userId='me').execute()
         user_email = user_info['emailAddress']
+    except Exception as e:
+        # Handle any error during the fetching of user profile (e.g. network failure)
+        return f"Failed to fetch user info: {str(e)}", 500
 
-        # Save email in session
-        session['email'] = user_email
+    # Save email in session
+    session['email'] = user_email
 
-    next_url = session.pop('next_url', '/home')  # Default to /home if not set
+    # Save credentials to a unique file per user
+    token_path = get_token_path(user_email)
+    try:
+        with open(token_path, 'wb') as token_file:
+            pickle.dump(creds, token_file)
+    except Exception as e:
+        # Handle any error saving the token
+        return f"Failed to save token: {str(e)}", 500
+
+    # Redirect to the next page (home or whatever page was stored)
+    next_url = session.pop('next_url', '/home')
     return redirect(next_url)
 
 
-def get_email_content(service, message_id):
+def get_email_content(service, message_id, user_email):
+    creds = load_user_credentials(user_email)  # Load user-specific credentials
+    if not creds:
+        # Handle missing or expired credentials
+        return None
+
+    # Now use the service with the correct user credentials
+    service = build('gmail', 'v1', credentials=creds)
     msg_detail = service.users().messages().get(userId='me', id=message_id).execute()
     payload = msg_detail['payload']
     headers = payload['headers']
@@ -196,34 +258,49 @@ def create_draft(service, sender, subject, recipient, body):
 
     return draft
 
-
 @app.route('/')
 def index():
-    if not os.path.exists('token.pkl'):
+    user_email = session.get('email')  # Get the user email from session
+
+    if not user_email:
+        return redirect('/authorize')  # Redirect if no user is logged in
+
+    token_path = f'tokens/{user_email}.pkl'
+
+    # Check if the user's token file exists
+    if not os.path.exists(token_path):
         return redirect('/authorize')
     return redirect('/home')
 
 
 @app.route('/dashboard')
 def dashboard():
-    service = gmail_authenticate()
-    if not service:
+    # Use the logged-in user's email from session
+    user_email = session.get('email')
+    if not user_email:
         return redirect('/authorize')
 
-    results = service.users().messages().list(userId='me', labelIds=['INBOX'], q='is:unread', maxResults=10).execute()
+    # Load user credentials based on the logged-in user's email
+    creds = load_user_credentials(user_email)
+    if not creds:
+        return redirect('/authorize')
+
+    service = build('gmail', 'v1', credentials=creds)
+
+    results = service.users().messages().list(userId=user_email, labelIds=['INBOX'], q='is:unread', maxResults=10).execute()
     messages = results.get('messages', [])
 
     email_data = []
     for msg in messages:
         subject, sender, body, _ = get_email_content(service, msg['id'])
         # Create draft including summary + AI response
-        draft = create_draft(service, 'me', subject, sender, body)
+        draft = create_draft(service, user_email, subject, sender, body)
 
         print(f"Draft created with ID: {draft['id']}")  # For debugging
 
         # Mark the email as read after creating a draft
         service.users().messages().modify(
-            userId='me',
+            userId=user_email,
             id=msg['id'],
             body={'removeLabelIds': ['UNREAD']}
         ).execute()
@@ -239,41 +316,41 @@ def dashboard():
 
 @app.route('/view_drafts')
 def view_drafts():
+    user_email = session.get('email')
+    if not user_email:
+        return redirect('/authorize')  # Redirect if user email is not found
+
     service = gmail_authenticate()
     if not service:
         return redirect('/authorize')
 
     try:
-        results = service.users().drafts().list(userId='me').execute()
+        results = service.users().drafts().list(userId=user_email).execute()
         drafts = results.get('drafts', [])
 
         if not drafts:
-            # If no drafts exist, just return an empty list and don't show an error
             return render_template('view_drafts.html', drafts=[])
 
         draft_details = []
         for draft in drafts:
             draft_id = draft['id']
-            draft_detail = service.users().drafts().get(userId='me', id=draft_id).execute()
+            draft_detail = service.users().drafts().get(userId=user_email, id=draft_id).execute()
             message = draft_detail.get('message', {})
             headers = message.get('payload', {}).get('headers', [])
             subject = next((h['value'] for h in headers if h['name'] == 'Subject'), 'No Subject')
             sender = next((h['value'] for h in headers if h['name'] == 'From'), 'Unknown Sender')
 
-            # Attempt to retrieve the body from parts (handling plain-text and HTML)
             body = 'No body content found.'
             parts = message.get('payload', {}).get('parts', [])
 
             if parts:
                 for part in parts:
-                    # Check if part is text/plain or text/html
                     if part.get('mimeType') == 'text/plain' or part.get('mimeType') == 'text/html':
                         data = part.get('body', {}).get('data', '')
                         if data:
                             body = base64.urlsafe_b64decode(data).decode('utf-8')
-                            break  # We found a part, no need to continue
+                            break
 
-            # If no parts found, check for body directly (for single part emails)
             if not body and 'body' in message.get('payload', {}):
                 body_data = message.get('payload', {}).get('body', {}).get('data', '')
                 if body_data:
@@ -283,21 +360,13 @@ def view_drafts():
                 'id': draft_id,
                 'subject': subject,
                 'body': body,
-
             })
 
         return render_template('view_drafts.html', drafts=draft_details)
 
-
     except HttpError as error:
-
-        # Only print if it's not a "not found" error
-
         if error.resp.status != 404:
             print(f"An error occurred: {error}")
-
-        # Silently handle the error and don't show anything
-
         return redirect('/view_drafts')
 
 
@@ -307,16 +376,22 @@ def send_draft(draft_id):
     if not service:
         return redirect('/authorize')
 
+    user_email = session.get('email')  # Get the user's email from the session
+
+    if not user_email:
+        # If there's no user email in the session, redirect to authorize route
+        return redirect('/authorize')
+
     try:
         # Get the draft content
-        draft = service.users().drafts().get(userId='me', id=draft_id).execute()
+        draft = service.users().drafts().get(userId=user_email, id=draft_id).execute()
         message = draft['message']
 
         # Send the existing draft properly
-        service.users().drafts().send(userId='me', body={'id': draft_id}).execute()
+        service.users().drafts().send(userId=user_email, body={'id': draft_id}).execute()
 
         # Optionally delete the draft now that it's sent
-        service.users().drafts().delete(userId='me', id=draft_id).execute()
+        service.users().drafts().delete(userId=user_email, id=draft_id).execute()
 
     except Exception as e:
         print(f"Error sending draft: {e}")
@@ -324,8 +399,14 @@ def send_draft(draft_id):
     return redirect(url_for('view_drafts'))
 
 def get_total_drafts(service):
+    user_email = session.get('email')  # Get the user's email from the session
+
+    if not user_email:
+        # If there's no user email in the session, return 0 or handle as needed
+        return 0
+
     # Fetch total drafts using Gmail API (filtered by 'waiting' status)
-    results = service.users().drafts().list(userId='me').execute()
+    results = service.users().drafts().list(userId=user_email).execute()
     drafts = results.get('drafts', [])
     return len(drafts)
 
@@ -364,8 +445,8 @@ def home():
     if not service:
         return redirect('/authorize')
 
-    user_info = service.users().getProfile(userId='me').execute()
-    user_name = user_info.get('emailAddress', 'User')
+    # Retrieve the user's email from the session
+    user_email = session.get('email', 'User')
 
     # Get total responses generated from the responses_count.json file
     total_responses = read_response_count()
@@ -375,7 +456,7 @@ def home():
 
     return render_template(
         'home.html',
-        user_name=user_name,
+        user_name=user_email,
         total_responses=total_responses,
         total_drafts=total_drafts,
         ai_quote=ai_quote,
@@ -387,14 +468,23 @@ def save_draft(draft_id):
     data = request.get_json()
     updated_body = data.get('body')
 
-    # Load Gmail credentials
-    token_path = os.getenv('TOKEN_PATH', 'token.pkl')
-    with open(token_path, 'rb') as token:
-        creds = pickle.load(token)
+    # Get user email from session (ensure it's saved during OAuth)
+    user_email = session.get('email')
+    if not user_email:
+        return jsonify({'success': False, 'error': 'User not logged in'}), 401
+
+    # Load Gmail credentials for the specific user
+    token_path = os.path.join('tokens', f'{user_email}.pkl')
+    try:
+        with open(token_path, 'rb') as token:
+            creds = pickle.load(token)
+    except FileNotFoundError:
+        return jsonify({'success': False, 'error': 'Token file not found for user'}), 404
+
     service = build('gmail', 'v1', credentials=creds)
 
     # Fetch the existing draft to extract original headers
-    draft = service.users().drafts().get(userId='me', id=draft_id).execute()
+    draft = service.users().drafts().get(userId=user_email, id=draft_id).execute()
     headers = draft['message'].get('payload', {}).get('headers', [])
 
     def get_header(name):
@@ -414,7 +504,7 @@ def save_draft(draft_id):
 
     try:
         service.users().drafts().update(
-            userId='me',
+            userId=user_email,
             id=draft_id,
             body={'message': {'raw': raw_message}}
         ).execute()
@@ -511,16 +601,23 @@ def save_settings():
 
 @app.route('/delete_draft/<draft_id>', methods=['POST'])
 def delete_draft(draft_id):
-    service = gmail_authenticate()  # Use the same authenticate function
+    # Get the user's email from the session
+    user_email = session.get('email', '')
+
+    if not user_email:
+        return redirect('/authorize')  # Redirect if user email is not found
+
+    service = gmail_authenticate(user_email)  # Use the user's specific authentication service
 
     if not service:
         return redirect('/authorize')
 
     try:
-        service.users().drafts().delete(userId='me', id=draft_id).execute()
+        service.users().drafts().delete(userId=user_email, id=draft_id).execute()
     except Exception as e:
         print(f"Failed to delete draft: {e}")
         # Optionally, flash an error message
+
     return redirect(url_for('view_drafts'))
 
 if __name__ == '__main__':

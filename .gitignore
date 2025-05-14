@@ -14,5 +14,5 @@ env/
 .venv/
 
 # Secret and credential files
-token.pkl
+tokens/
 credentials.json
