@@ -68,19 +68,24 @@ def gmail_authenticate(user_email):
 
     return build('gmail', 'v1', credentials=creds)
 
-def read_response_count():
+def read_response_count(user_email):
+    file_path = f'data/{user_email}_responses_count.json'  # Make it user-specific
     try:
-        with open('data/responses_count.json', 'r') as f:
+        with open(file_path, 'r') as f:
             data = json.load(f)
             return data.get("response_count", 0)
     except (FileNotFoundError, json.JSONDecodeError):
-        return 0
+        return 0  # If no file exists or it's empty, return 0
 
-# Function to increment the response count
-def increment_response_count():
-    count = read_response_count() + 1
-    with open('data/responses_count.json', 'w') as f:
-        json.dump({"response_count": count}, f)
+# Increment the response count for a specific user
+def increment_response_count(user_email):
+    # Get the current count
+    current_count = read_response_count(user_email) + 1
+
+    # Save the updated count to the user's specific file
+    file_path = f'data/{user_email}_responses_count.json'
+    with open(file_path, 'w') as f:
+        json.dump({"response_count": current_count}, f)
 
 
 @app.route('/authorize')
@@ -253,8 +258,9 @@ def create_draft(service, sender, subject, recipient, body):
     draft = service.users().drafts().create(
         userId="me", body={'message': {'raw': raw_message}}).execute()
 
-    # Increment the response count every time an AI response is created
-    increment_response_count()
+    user_email = session.get('email')
+    if user_email:
+        increment_response_count(user_email)
 
     return draft
 
@@ -452,7 +458,7 @@ def home():
     if not service:
         return redirect('/authorize')
 
-    total_responses = read_response_count()
+    total_responses = read_response_count(user_email)
     total_drafts = get_total_drafts(service)
     ai_quote = generate_ai_quote()
     energy_status = get_energy_status()
