@@ -534,8 +534,7 @@ def load_user_settings(email):
         all_settings = json.load(f)
 
     # Fetch settings using the user's email
-    return all_settings.get(email, {})
-
+    return all_settings.get(email, {'website': '', 'signature': ''})  # Default empty settings if not found
 
 def save_user_settings(email, website, signature):
     all_settings = {}
@@ -543,14 +542,12 @@ def save_user_settings(email, website, signature):
         with open(SETTINGS_FILE, 'r') as f:
             all_settings = json.load(f)
 
-    # Save settings under the user's email instead of "default"
+    # Save settings under the user's email
     all_settings[email] = {'website': website, 'signature': signature}
 
     with open(SETTINGS_FILE, 'w') as f:
         json.dump(all_settings, f, indent=2)
 
-
-# Updated function to pass email to save_user_settings
 @app.route('/settings', methods=['GET', 'POST'])
 def settings():
     # Handle form submission for website link and signature
@@ -571,8 +568,15 @@ def settings():
         flash('Settings updated successfully!', 'success')
 
     # Retrieve saved settings from the session or data file
-    website_link = session.get('website_link', '')
-    email_signature = session.get('email_signature', '')
+    user_email = session.get('email', '')
+    website_link = ''
+    email_signature = ''
+
+    if user_email:
+        # Load settings specific to the user
+        user_settings = load_user_settings(user_email)
+        website_link = user_settings.get('website', '')
+        email_signature = user_settings.get('signature', '')
 
     # Render the settings page with the current values
     return render_template('settings.html',
@@ -601,6 +605,7 @@ def save_settings():
 
     flash('Settings updated successfully!', 'success')
     return redirect('/settings')
+
 
 @app.route('/delete_draft/<draft_id>', methods=['POST'])
 def delete_draft(draft_id):
