@@ -292,6 +292,14 @@ def verify_pin():
         return jsonify({'success': True})
     return jsonify({'success': False})
 
+@app.route('/terms-of-service')
+def terms_of_service():
+    return render_template('terms-of-service.html')
+
+@app.route('/privacy-policy')
+def privacy_policy():
+    return render_template('privacy-policy.html')
+
 @app.route('/dashboard')
 def dashboard():
     # Use the logged-in user's email from session

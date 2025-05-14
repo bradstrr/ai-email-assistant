@@ -127,6 +127,16 @@
       color: white;
     }
 
+    footer a {
+  color: white;
+  text-decoration: none;
+  margin-right: 20px; /* space between links */
+}
+
+footer a:hover {
+  text-decoration: underline;
+}
+
     @media (max-width: 768px) {
       .features {
         flex-direction: column;
@@ -246,7 +256,12 @@
 
   <footer>
     <p>&copy; 2025 ICode Automation. All rights reserved.</p>
+    <p>
+    <a href="/privacy-policy" style="color: white; text-decoration: none; margin-right: 20px;">Privacy Policy</a>
+    <a href="/terms-of-service" style="color: white; text-decoration: none;">Terms of Service</a>
+  </p>
   </footer>
+
 <div id="accessModal" class="modal">
   <div class="modal-content">
     <span class="close" onclick="toggleModal()">&times;</span>
