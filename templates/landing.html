@@ -216,6 +216,15 @@ footer a:hover {
     color: red;
     margin-top: 1rem;
   }
+    .flash-message {
+  background-color: #e0ffe0;
+  color: #006600;
+  padding: 10px;
+  border-radius: 5px;
+  margin: 15px 0;
+  font-weight: bold;
+  text-align: center;
+}
   </style>
 </head>
 <body>
@@ -248,7 +257,14 @@ footer a:hover {
   <section id="contact" class="contact">
     <h2>Get in Touch</h2>
     <p>Interested in using the assistant or learning more? Drop your email below.</p>
-    <form action="mailto:your@email.com" method="POST" enctype="text/plain">
+
+     {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      <div class="flash-message">{{ messages[0] }}</div>
+    {% endif %}
+  {% endwith %}
+
+    <form method="POST" action="/">
       <input type="email" name="email" placeholder="Your email address" required>
       <button type="submit">Contact Us</button>
     </form>

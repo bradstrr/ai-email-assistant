@@ -278,8 +278,16 @@ def index():
         return redirect('/authorize')
     return redirect('/home')
 
-@app.route('/')
+@app.route('/', methods=['GET', 'POST'])
 def landing():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        if email:
+            # Save to file
+            with open('contact_emails.txt', 'a') as f:
+                f.write(email + '\n')
+            flash("Thanks! We'll be in touch.")
+            return redirect('/')
     return render_template('landing.html')
 
 @app.route('/verify-pin', methods=['POST'])
