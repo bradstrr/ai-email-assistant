@@ -292,9 +292,11 @@ def dashboard():
 
     email_data = []
     for msg in messages:
-        subject, sender, body, _ = get_email_content(service, msg['id'])
+        # Pass user_email to the get_email_content function
+        subject, sender, body, _ = get_email_content(service, msg['id'], user_email)  # Pass user_email
+
         # Create draft including summary + AI response
-        draft = create_draft(service, user_email, subject, sender, body)
+        draft = create_draft(service, user_email, subject, sender, body)  # Pass user_email
 
         print(f"Draft created with ID: {draft['id']}")  # For debugging
 
@@ -313,14 +315,13 @@ def dashboard():
 
     return render_template('dashboard.html', messages=email_data)
 
-
 @app.route('/view_drafts')
 def view_drafts():
     user_email = session.get('email')
     if not user_email:
         return redirect('/authorize')  # Redirect if user email is not found
 
-    service = gmail_authenticate()
+    service = gmail_authenticate(user_email)
     if not service:
         return redirect('/authorize')
 
@@ -372,14 +373,14 @@ def view_drafts():
 
 @app.route('/send_draft/<draft_id>', methods=['POST'])
 def send_draft(draft_id):
-    service = gmail_authenticate()
-    if not service:
-        return redirect('/authorize')
-
     user_email = session.get('email')  # Get the user's email from the session
 
     if not user_email:
         # If there's no user email in the session, redirect to authorize route
+        return redirect('/authorize')
+
+    service = gmail_authenticate(user_email)
+    if not service:
         return redirect('/authorize')
 
     try:
@@ -441,14 +442,16 @@ def get_energy_status():
 
 @app.route('/home')
 def home():
-    service = gmail_authenticate()
+    # Retrieve the user's email from the session
+    user_email = session.get('email')
+    if not user_email:
+        return redirect('/authorize')
+
+    # Pass the email into gmail_authenticate
+    service = gmail_authenticate(user_email)
     if not service:
         return redirect('/authorize')
 
-    # Retrieve the user's email from the session
-    user_email = session.get('email', 'User')
-
-    # Get total responses generated from the responses_count.json file
     total_responses = read_response_count()
     total_drafts = get_total_drafts(service)
     ai_quote = generate_ai_quote()
