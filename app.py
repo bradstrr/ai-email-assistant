@@ -294,6 +294,23 @@ def landing():
 def faq():
     return render_template('faq.html')
 
+@app.route('/contact', methods=['POST'])
+def contact():
+    name = request.form.get('name')
+    email = request.form.get('email')
+    message = request.form.get('message')
+
+    if email:
+        # Save to the same file
+        with open('contact_emails.txt', 'a') as f:
+            f.write(f"{name} ({email}): {message}\n")
+        flash("Thanks! We'll be in touch.")
+        return redirect('/')
+    else:
+        flash("Please enter your email.")
+        return redirect('/')
+
+
 @app.route('/verify-pin', methods=['POST'])
 def verify_pin():
     data = request.get_json()

@@ -16,3 +16,4 @@ env/
 # Secret and credential files
 tokens/
 credentials.json
+contact_emails.txt
