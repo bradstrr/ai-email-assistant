@@ -527,25 +527,26 @@ def save_draft(draft_id):
     data = request.get_json()
     updated_body = data.get('body')
 
-    # Get user email from session (ensure it's saved during OAuth)
     user_email = session.get('email')
     if not user_email:
         return jsonify({'success': False, 'error': 'User not logged in'}), 401
 
-        # Replace '@' and '.' in email to match token filename format
-    token_email = user_email.replace('@', '_at_').replace('.', '_')
-    token_path = os.path.join('tokens', f'{token_email}_token.pkl')
-
+    token_path = os.path.join('tokens', f'{user_email}.pkl')
     try:
-        with open(token_path, 'rb') as token:
-            creds = pickle.load(token)
+        with open(token_path, 'rb') as token_file:
+            creds = pickle.load(token_file)
     except FileNotFoundError:
         return jsonify({'success': False, 'error': 'Token file not found for user'}), 404
 
     service = build('gmail', 'v1', credentials=creds)
 
-    # Fetch the existing draft to extract original headers
-    draft = service.users().drafts().get(userId=user_email, id=draft_id).execute()
+    try:
+        # Always use 'me' here for Gmail API userId when accessing drafts
+        draft = service.users().drafts().get(userId='me', id=draft_id).execute()
+    except Exception as e:
+        print(f"Error fetching draft {draft_id}: {e}")
+        return jsonify({'success': False, 'error': f'Failed to fetch draft: {e}'}), 404
+
     headers = draft['message'].get('payload', {}).get('headers', [])
 
     def get_header(name):
@@ -557,7 +558,6 @@ def save_draft(draft_id):
     to_email = data.get('to') or get_header('To')
     subject = data.get('subject') or get_header('Subject')
 
-    # Build the updated MIME message
     mime_message = MIMEText(updated_body)
     mime_message['to'] = to_email
     mime_message['subject'] = subject
@@ -565,21 +565,23 @@ def save_draft(draft_id):
 
     try:
         service.users().drafts().update(
-            userId=user_email,
+            userId='me',  # Use 'me' here as well
             id=draft_id,
             body={'message': {'raw': raw_message}}
         ).execute()
 
-        for draft in session.get('drafts', []):
-            if draft['id'] == draft_id:
-                draft['body'] = updated_body
+        # Update session draft body if stored
+        drafts = session.get('drafts', [])
+        for draft_item in drafts:
+            if draft_item['id'] == draft_id:
+                draft_item['body'] = updated_body
                 break
-
         session.modified = True
+
         return jsonify({'success': True, 'updated': True}), 200
 
     except Exception as e:
-        print("Error updating draft:", e)
+        print(f"Error updating draft {draft_id}: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
