@@ -545,7 +545,7 @@ def save_draft(draft_id):
     service = build('gmail', 'v1', credentials=creds)
 
     # Fetch the existing draft to extract original headers
-    draft = service.users().drafts().get(userId='me', id=draft_id).execute()
+    draft = service.users().drafts().get(userId=user_email, id=draft_id).execute()
     headers = draft['message'].get('payload', {}).get('headers', [])
 
     def get_header(name):
@@ -565,7 +565,7 @@ def save_draft(draft_id):
 
     try:
         service.users().drafts().update(
-            userId='me',
+            userId=user_email,
             id=draft_id,
             body={'message': {'raw': raw_message}}
         ).execute()
