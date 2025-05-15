@@ -524,6 +524,7 @@ def home():
 
 @app.route('/save_draft/<draft_id>', methods=['POST'])
 def save_draft(draft_id):
+    print(f"📥 save_draft endpoint hit with draft_id: {draft_id}")
     data = request.get_json()
     updated_body = data.get('body')
 
