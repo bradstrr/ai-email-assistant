@@ -524,7 +524,6 @@ def home():
 
 @app.route('/save_draft/<draft_id>', methods=['POST'])
 def save_draft(draft_id):
-    print(f"📥 save_draft endpoint hit with draft_id: {draft_id}")
     data = request.get_json()
     updated_body = data.get('body')
 
@@ -533,8 +532,10 @@ def save_draft(draft_id):
     if not user_email:
         return jsonify({'success': False, 'error': 'User not logged in'}), 401
 
-    # Load Gmail credentials for the specific user
-    token_path = os.path.join('tokens', f'{user_email}.pkl')
+        # Replace '@' and '.' in email to match token filename format
+    token_email = user_email.replace('@', '_at_').replace('.', '_')
+    token_path = os.path.join('tokens', f'{token_email}_token.pkl')
+
     try:
         with open(token_path, 'rb') as token:
             creds = pickle.load(token)
