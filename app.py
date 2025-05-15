@@ -531,48 +531,40 @@ def save_draft(draft_id):
     if not user_email:
         return jsonify({'success': False, 'error': 'User not logged in'}), 401
 
-    token_path = os.path.join('tokens', f'{user_email}.pkl')
-    try:
-        with open(token_path, 'rb') as token_file:
-            creds = pickle.load(token_file)
-    except FileNotFoundError:
-        return jsonify({'success': False, 'error': 'Token file not found for user'}), 404
-
-    service = build('gmail', 'v1', credentials=creds)
+    # Use the same Gmail auth method as send_draft
+    service = gmail_authenticate(user_email)
+    if not service:
+        return jsonify({'success': False, 'error': 'Failed to authenticate with Gmail'}), 403
 
     try:
-        # Always use 'me' here for Gmail API userId when accessing drafts
-        draft = service.users().drafts().get(userId='me', id=draft_id).execute()
-    except Exception as e:
-        print(f"Error fetching draft {draft_id}: {e}")
-        return jsonify({'success': False, 'error': f'Failed to fetch draft: {e}'}), 404
+        # Get the current draft
+        draft = service.users().drafts().get(userId=user_email, id=draft_id).execute()
+        headers = draft['message'].get('payload', {}).get('headers', [])
 
-    headers = draft['message'].get('payload', {}).get('headers', [])
+        def get_header(name):
+            for h in headers:
+                if h['name'].lower() == name.lower():
+                    return h['value']
+            return ''
 
-    def get_header(name):
-        for h in headers:
-            if h['name'].lower() == name.lower():
-                return h['value']
-        return ''
+        to_email = data.get('to') or get_header('To')
+        subject = data.get('subject') or get_header('Subject')
 
-    to_email = data.get('to') or get_header('To')
-    subject = data.get('subject') or get_header('Subject')
+        # Create new MIME message
+        mime_message = MIMEText(updated_body)
+        mime_message['to'] = to_email
+        mime_message['subject'] = subject
+        raw_message = base64.urlsafe_b64encode(mime_message.as_bytes()).decode()
 
-    mime_message = MIMEText(updated_body)
-    mime_message['to'] = to_email
-    mime_message['subject'] = subject
-    raw_message = base64.urlsafe_b64encode(mime_message.as_bytes()).decode()
-
-    try:
+        # Update the draft
         service.users().drafts().update(
-            userId='me',  # Use 'me' here as well
+            userId=user_email,
             id=draft_id,
             body={'message': {'raw': raw_message}}
         ).execute()
 
-        # Update session draft body if stored
-        drafts = session.get('drafts', [])
-        for draft_item in drafts:
+        # Update the session-stored draft
+        for draft_item in session.get('drafts', []):
             if draft_item['id'] == draft_id:
                 draft_item['body'] = updated_body
                 break
