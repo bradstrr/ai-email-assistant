@@ -15,6 +15,7 @@ from flask import flash
 from google.auth.transport.requests import Request
 import firebase_admin
 from firebase_admin import credentials, firestore
+import tempfile
 
 # Load the service account JSON string from env var
 service_account_json_str = os.environ.get('FIREBASE_SERVICE_ACCOUNT_JSON')
