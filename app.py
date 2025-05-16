@@ -16,11 +16,14 @@ from google.auth.transport.requests import Request
 import firebase_admin
 from firebase_admin import credentials, firestore
 
-# Initialize the Firebase app with the service account key
-cred = credentials.Certificate('serviceAccountKey.json')
+# Load Firebase service account info from environment variable
+service_account_info = json.loads(os.environ.get('FIREBASE_SERVICE_ACCOUNT_JSON'))
+
+# Initialize the Firebase app with the loaded credentials
+cred = credentials.Certificate(service_account_info)
 firebase_admin.initialize_app(cred)
 
-# Get Firestore client
+# Get Firestore client — keep this variable name as 'db' for consistency
 db = firestore.client()
 
 TOKEN_DIR = 'tokens'  # Make sure this directory exists
