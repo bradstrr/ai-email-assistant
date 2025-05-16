@@ -22,11 +22,17 @@ service_account_json_str = os.environ.get('FIREBASE_SERVICE_ACCOUNT_JSON')
 # Parse JSON string into dict
 service_account_info = json.loads(service_account_json_str)
 
-# Use the dict to create credentials (this works!)
-cred = credentials.Certificate(service_account_info)
+# Write the JSON to a temp file
+with tempfile.NamedTemporaryFile(mode='w+', suffix='.json', delete=False) as temp:
+    json.dump(service_account_info, temp)
+    temp.flush()  # Ensure data is written
+    temp_path = temp.name
+
+# Use the temp file path to create credentials
+cred = credentials.Certificate(temp_path)
 firebase_admin.initialize_app(cred)
 
-# Now get Firestore client
+# Get Firestore client
 db = firestore.client()
 
 TOKEN_DIR = 'tokens'  # Make sure this directory exists
