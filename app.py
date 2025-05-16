@@ -13,6 +13,15 @@ from flask import jsonify
 import random
 from flask import flash
 from google.auth.transport.requests import Request
+import firebase_admin
+from firebase_admin import credentials, firestore
+
+# Initialize the Firebase app with the service account key
+cred = credentials.Certificate('serviceAccountKey.json')
+firebase_admin.initialize_app(cred)
+
+# Get Firestore client
+db = firestore.client()
 
 TOKEN_DIR = 'tokens'  # Make sure this directory exists
 os.makedirs(TOKEN_DIR, exist_ok=True)
@@ -69,23 +78,22 @@ def gmail_authenticate(user_email):
     return build('gmail', 'v1', credentials=creds)
 
 def read_response_count(user_email):
-    file_path = f'data/{user_email}_responses_count.json'  # Make it user-specific
-    try:
-        with open(file_path, 'r') as f:
-            data = json.load(f)
-            return data.get("response_count", 0)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return 0  # If no file exists or it's empty, return 0
+    doc_ref = db.collection('response_counts').document(user_email)
+    doc = doc_ref.get()
+    if doc.exists:
+        data = doc.to_dict()
+        return data.get("response_count", 0)
+    else:
+        return 0
 
-# Increment the response count for a specific user
 def increment_response_count(user_email):
-    # Get the current count
-    current_count = read_response_count(user_email) + 1
-
-    # Save the updated count to the user's specific file
-    file_path = f'data/{user_email}_responses_count.json'
-    with open(file_path, 'w') as f:
-        json.dump({"response_count": current_count}, f)
+    doc_ref = db.collection('response_counts').document(user_email)
+    doc = doc_ref.get()
+    if doc.exists:
+        current_count = doc.to_dict().get("response_count", 0) + 1
+    else:
+        current_count = 1
+    doc_ref.set({"response_count": current_count})
 
 
 @app.route('/authorize')
@@ -300,14 +308,24 @@ def contact():
     email = request.form.get('email')
     message = request.form.get('message')
 
-    if email:
-        # Save to the same file
-        with open('contact_emails.txt', 'a') as f:
-            f.write(f"{name} ({email}): {message}\n")
+    if not email:
+        flash("Please enter your email.")
+        return redirect('/')
+
+    try:
+        # Add a new document to the 'contacts' collection
+        doc_ref = db.collection('contacts').document()
+        doc_ref.set({
+            'name': name,
+            'email': email,
+            'message': message,
+        })
+
         flash("Thanks! We'll be in touch.")
         return redirect('/')
-    else:
-        flash("Please enter your email.")
+    except Exception as e:
+        print(f"Error saving contact info: {e}")
+        flash("Sorry, there was an error. Please try again later.")
         return redirect('/')
 
 
@@ -317,9 +335,40 @@ def verify_pin():
     username = data.get('username')
     pin = data.get('pin')
 
+    # Admin quick check for your master admin pin (optional)
     if username == 'ADMIN' and pin == '2606':
         return jsonify({'success': True})
+
+    # Check Firestore for username's pin
+    doc_ref = db.collection('client_pins').document(username)
+    doc = doc_ref.get()
+
+    if doc.exists:
+        stored_pin = doc.to_dict().get('pin')
+        if stored_pin == pin:
+            return jsonify({'success': True})
+
     return jsonify({'success': False})
+
+@app.route('/add-client-pin', methods=['POST'])
+def add_client_pin():
+    data = request.get_json()
+    admin_key = data.get('admin_key')  # simple admin auth, e.g. your '2606' pin or some secret
+    if admin_key != '2606':
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+
+    username = data.get('username')
+    pin = data.get('pin')
+    if not username or not pin:
+        return jsonify({'success': False, 'error': 'Missing username or pin'}), 400
+
+    # Add or update client pin in Firestore
+    doc_ref = db.collection('client_pins').document(username)
+    doc_ref.set({'pin': pin})
+
+    return jsonify({'success': True, 'message': f'Pin set for user {username}'})
+
+
 
 @app.route('/terms-of-service')
 def terms_of_service():
@@ -577,28 +626,26 @@ def save_draft(draft_id):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
-SETTINGS_FILE = 'data/settings.json'
-
 def load_user_settings(email):
-    if not os.path.exists(SETTINGS_FILE):
-        return {}
-    with open(SETTINGS_FILE, 'r') as f:
-        all_settings = json.load(f)
-
-    # Fetch settings using the user's email
-    return all_settings.get(email, {'website': '', 'signature': ''})  # Default empty settings if not found
+    # Get document for this user
+    doc_ref = db.collection('user_settings').document(email)
+    doc = doc_ref.get()
+    if doc.exists:
+        data = doc.to_dict()
+        return {
+            'website': data.get('website', ''),
+            'signature': data.get('signature', '')
+        }
+    else:
+        return {'website': '', 'signature': ''}  # default if no doc
 
 def save_user_settings(email, website, signature):
-    all_settings = {}
-    if os.path.exists(SETTINGS_FILE):
-        with open(SETTINGS_FILE, 'r') as f:
-            all_settings = json.load(f)
-
-    # Save settings under the user's email
-    all_settings[email] = {'website': website, 'signature': signature}
-
-    with open(SETTINGS_FILE, 'w') as f:
-        json.dump(all_settings, f, indent=2)
+    # Set the user document (create or update)
+    doc_ref = db.collection('user_settings').document(email)
+    doc_ref.set({
+        'website': website,
+        'signature': signature
+    })
 
 @app.route('/settings', methods=['GET', 'POST'])
 def settings():

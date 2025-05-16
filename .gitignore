@@ -17,3 +17,4 @@ env/
 tokens/
 credentials.json
 contact_emails.txt
+serviceAccountKey.json
